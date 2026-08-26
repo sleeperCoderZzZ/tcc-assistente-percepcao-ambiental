@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura PWA com Retenção Zero de Dados.">
+  <meta name="theme-color" content="#070a12">
+  <title>Assistente de Percepção Ambiental (Retenção Zero)</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Atalho de acessibilidade para saltar navegação -->
+  <a href="#main-content" class="skip-link" data-audio-label="Atalho: Pular para o conteúdo principal">Pular para o conteúdo principal</a>
+
+  <!-- Destaque / Spotlight para o Guia Passo a Passo -->
+  <div id="tour-spotlight" class="tour-spotlight hidden" aria-hidden="true"></div>
+
+  <div class="app-container">
+    
+    <!-- Cabeçalho Principal -->
+    <header class="app-header" role="banner">
+      <div class="brand">
+        <div class="hero-avatar-container">
+          <img src="hero_vision_assistant.jpg" alt="Ícone de Percepção Visual por IA" class="hero-avatar">
+        </div>
+        <div>
+          <h1>Percepção Ambiental <span class="badge-vlm">VLM AI</span></h1>
+          <p class="subtitle">Arquitetura Web de Retenção Zero de Dados</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="header-buttons-row">
+          <button id="btn-toggle-audio" class="btn btn-audio-toggle active" aria-label="Alternar retorno de áudio de navegação. Status atual: Ativado" data-audio-label="Botão Sons de Navegação Ativados">
+            <span aria-hidden="true">🔊</span> Som de Navegação: ON
+          </button>
+
+          <button id="btn-open-tour" class="btn btn-tour" aria-label="Abrir modo Guia e Instruções Passo a Passo na Tela (Atalho Alt mais G)" data-audio-label="Botão Abrir Guia Passo a Passo">
+            <span aria-hidden="true">📖</span> Guia Passo a Passo
+          </button>
+        </div>
+
+        <div class="header-badges">
+          <span class="badge badge-privacy" title="Processamento exclusivo em memória RAM">🔒 Retenção Zero</span>
+          <span class="badge badge-a11y" title="Conformidade WCAG 2.1 AAA">♿ WCAG 2.1 AAA</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Barra de Atalhos de Teclado Rápido -->
+    <nav class="shortcuts-bar" aria-label="Atalhos de teclado rápidos">
+      <span class="shortcuts-title">⌨️ Atalhos Rápidos:</span>
+      <kbd>Alt + G</kbd> Guia Passo a Passo
+      <kbd>Alt + A</kbd> Analisar Ambiente
+      <kbd>Alt + P</kbd> Detectar Pessoas
+      <kbd>Alt + R</kbd> Repetir Áudio
+    </nav>
+
+    <main id="main-content" class="app-main" tabindex="-1">
+      
+      <!-- Regiões ARIA Live para Anúncios de Leitores de Tela -->
+      <div id="aria-assertive-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+      <div id="aria-polite-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- Seção de Alertas Físicos e Perigos (Prioridade Máxima) -->
+      <section id="hazard-alert-box" class="hazard-alert-box hidden" aria-labelledby="hazard-heading">
+        <h2 id="hazard-heading" class="hazard-heading">⚠️ ALERTA DE SEGURANÇA NO AMBIENTE</h2>
+        <ul id="hazard-list" class="hazard-list"></ul>
+      </section>
+
+      <!-- SEÇÃO 1: Câmera e Captura -->
+      <section id="section-capture" class="card capture-card" aria-labelledby="capture-heading" data-tour-step="1">
+        <div class="card-header">
+          <h2 id="capture-heading" class="section-title">
+            <span class="step-badge">Passo 1</span> 📷 Captura da Câmera
+          </h2>
+          <span class="card-status-pill" id="camera-status-pill">● Câmera Ativa</span>
+        </div>
+        
+        <div class="camera-preview-container">
+          <video id="camera-feed" autoplay playsinline class="camera-feed" aria-label="Visualização em tempo real da câmera do ambiente"></video>
+          
+          <!-- Overlay Animado de Varredura da Câmera -->
+          <div id="scan-overlay" class="scan-overlay hidden" aria-hidden="true">
+            <div class="scan-line"></div>
+            <span class="scan-text">Processando detecção de humanos e ambiente em memória RAM...</span>
+          </div>
+
+          <canvas id="capture-canvas" class="hidden"></canvas>
+          
+          <div id="image-placeholder" class="image-placeholder hidden">
+            <span class="placeholder-icon" aria-hidden="true">📷</span>
+            <span>Câmera desligada. Clique em "Alternar Câmera" para reativar.</span>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button id="btn-toggle-camera" class="btn btn-secondary" aria-label="Ligar ou desligar a câmera do dispositivo" data-audio-label="Botão Alternar Câmera do Dispositivo">
+            <span aria-hidden="true">🎥</span> Alternar Câmera
+          </button>
+
+          <button id="btn-detect-person" class="btn btn-outline" aria-label="Detectar se há pessoas à frente (Atalho Alt mais P)" data-audio-label="Botão Detectar Pessoas à Frente">
+            <span aria-hidden="true">👤</span> Detectar Pessoas
+          </button>
+
+          <button id="btn-capture" class="btn btn-primary btn-large" aria-label="Analisar ambiente agora (Atalho Alt mais A)" data-audio-label="Botão Analisar Ambiente Agora">
+            <span aria-hidden="true">⚡</span> Analisar Ambiente Agora
+          </button>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 2: Pergunta por Voz ou Texto -->
+      <section id="section-question" class="card voice-card" aria-labelledby="voice-heading" data-tour-step="2">
+        <h2 id="voice-heading" class="section-title">
+          <span class="step-badge">Passo 2</span> 🎙️ Pergunta por Voz ou Texto
+        </h2>
+        
+        <div class="input-group">
+          <label for="input-question" class="input-label">Qual a sua dúvida sobre o ambiente à sua frente?</label>
+          <div class="input-with-button">
+            <input type="text" id="input-question" class="text-input" placeholder="Ex: Tem alguma pessoa à minha frente? A que distância?" aria-describedby="question-hint" data-audio-label="Campo de texto: Digite sua dúvida sobre o ambiente">
+            <button id="btn-voice-input" class="btn btn-icon btn-mic" aria-label="Ativar microfone para falar pergunta por voz" data-audio-label="Botão Microfone para Pergunta por Voz">
+              <span aria-hidden="true">🎙️</span>
+            </button>
+            <button id="btn-submit-question" class="btn btn-icon btn-primary" aria-label="Enviar pergunta" data-audio-label="Botão Enviar Pergunta">
+              <span aria-hidden="true">➡️</span>
+            </button>
+          </div>
+          <span id="question-hint" class="input-hint">Dica: Pergunte se há pessoas, obstáculos, degraus ou portas no seu caminho.</span>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 3: Descrição e Retorno Auditivo com Detecção Humana -->
+      <section id="section-result" class="card result-card" aria-labelledby="result-heading" data-tour-step="3">
+        <div class="result-header">
+          <h2 id="result-heading" class="section-title">
+            <span class="step-badge">Passo 3</span> 🔊 Percepção e Retorno Auditivo
+          </h2>
+          <button id="btn-speak-again" class="btn btn-outline" aria-label="Ouvir novamente a descrição em voz alta (Atalho Alt mais R)" data-audio-label="Botão Ouvir Descrição Novamente" disabled>
+            <span aria-hidden="true">🔊</span> Ouvir Novamente
+          </button>
+        </div>
+
+        <!-- Painel de Detecção Humana e Proximidade -->
+        <div id="human-detection-box" class="human-detection-box hidden">
+          <div class="human-badge-row">
+            <span id="badge-human-status" class="human-status-tag">🧍 Pessoa Detectada: SIM</span>
+            <span id="badge-proximity" class="proximity-tag">📏 Proximidade: 0,7 m</span>
+          </div>
+          <p id="human-details-text" class="human-details-text"></p>
+        </div>
+
+        <div id="status-indicator" class="status-indicator" role="status">
+          <span class="status-dot"></span>
+          <span id="status-text">Aguardando análise do ambiente...</span>
+        </div>
+
+        <div class="description-output-box">
+          <p id="description-text" class="description-text">
+            Clique no botão "Analisar Ambiente Agora" para capturar a imagem e receber a narração sonora em tempo real.
+          </p>
+        </div>
+
+        <!-- Painel de Retenção Zero de Dados -->
+        <details class="tech-details" data-audio-label="Painel de Detalhes Técnicos de Retenção Zero">
+          <summary class="tech-summary">🔒 Detalhes da Arquitetura de Retenção Zero de Dados</summary>
+          <div class="tech-content">
+            <p><strong>Garantia de Privacidade:</strong> Retenção Zero (RAM Volátil Apenas)</p>
+            <p><strong>Persistência no Disco:</strong> Nenhuma. Os dados são limpos imediatamente após a inferência.</p>
+            <p><strong>Provedor de IA (Factory Pattern):</strong> <span id="info-provider">Mock / Gemini</span></p>
+            <p><strong>Recursos VLM:</strong> Detecção Humana + Estimativa de Proximidade Espacial em Metros</p>
+          </div>
+        </details>
+      </section>
+
+    </main>
+
+    <!-- Modal do Guia Passo a Passo Interativo -->
+    <div id="tour-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tour-step-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <span id="tour-step-badge" class="tour-step-indicator">Passo 1 de 5</span>
+          <h2 id="tour-step-title" class="modal-title">Guia de Uso Passo a Passo</h2>
+          <button id="btn-close-tour" class="btn-close" aria-label="Fechar guia passo a passo" data-audio-label="Botão Fechar Guia Passo a Passo">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="tour-icon-box" id="tour-icon-box" aria-hidden="true">💡</div>
+          <p id="tour-step-text" class="tour-description-text">
+            Instrução do passo aqui...
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-tour-prev" class="btn btn-secondary" aria-label="Voltar para o passo anterior do guia" data-audio-label="Botão Passo Anterior do Guia">&larr; Anterior</button>
+          <button id="btn-tour-speak" class="btn btn-outline" aria-label="Ouvir instrução deste passo novamente" data-audio-label="Botão Ouvir Instrução Novamente">🔊 Ouvir Instrução</button>
+          <button id="btn-tour-next" class="btn btn-primary" aria-label="Avançar para o próximo passo do guia" data-audio-label="Botão Próximo Passo do Guia">Próximo &rarr;</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="app-footer" role="contentinfo">
+      <p>Trabalho de Conclusão de Curso (TCC) • Assistente de Percepção Ambiental orientada a Privacidade e Acessibilidade (WCAG 2.1).</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

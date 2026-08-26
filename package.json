@@ -1,0 +1,29 @@
+{
+  "name": "assistente-percepcao-ambiental-zero-data",
+  "version": "1.0.0",
+  "description": "Assistente de Percepção Ambiental para pessoas com deficiência visual - Arquitetura PWA de Retenção Zero de Dados com Factory Design Pattern",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "pwa",
+    "zero-data-retention",
+    "accessibility",
+    "wcag",
+    "vision-language-models",
+    "vlm",
+    "factory-pattern",
+    "privacy-by-design"
+  ],
+  "author": "Projeto TCC",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
