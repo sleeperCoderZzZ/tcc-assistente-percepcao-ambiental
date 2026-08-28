@@ -34,8 +34,8 @@
     <v-app class="bg-transparent">
       
       <!-- HERO APP BAR PASTEL ELEGANTE -->
-      <v-app-bar flat color="white" class="border-b px-3 shadow-sm" height="72" role="banner">
-        <v-avatar color="primary" class="mr-3 shadow-pastel" size="48">
+      <v-app-bar flat color="white" class="border-b px-4 shadow-sm" height="76" role="banner">
+        <v-avatar color="primary" class="mr-3 shadow-pastel pulse-breathe" size="48">
           <v-icon icon="mdi-eye-outline" color="white" size="28"></v-icon>
         </v-avatar>
 
@@ -50,7 +50,7 @@
         <v-spacer></v-spacer>
 
         <!-- Badges de Garantia de Retenção e Acessibilidade -->
-        <div class="d-none d-sm-flex align-center gap-2 mr-3">
+        <div class="d-none d-sm-flex align-center gap-2 mr-4">
           <v-chip color="info" size="small" variant="tonal" class="font-weight-bold">
             <v-icon start icon="mdi-lock-check" size="small"></v-icon> Retenção Zero (RAM)
           </v-chip>
@@ -64,7 +64,7 @@
           :color="isVoiceListening ? 'success' : 'slate-500'"
           :variant="isVoiceListening ? 'flat' : 'outlined'"
           icon
-          class="mr-2"
+          class="mr-2 pulse-breathe"
           @click="toggleVoiceListening"
           aria-label="Alternar Escuta Contínua de Voz (Atalho: V)"
         >
@@ -94,9 +94,9 @@
         </v-btn>
       </v-app-bar>
 
-      <!-- CONTEÚDO PRINCIPAL -->
-      <v-main id="main-content" class="py-8 px-4" tabindex="-1">
-        <v-container class="max-width-lg">
+      <!-- CONTEÚDO PRINCIPAL COM CONTAINER CENTRALIZADO -->
+      <v-main id="main-content" class="py-6 px-4" tabindex="-1">
+        <div class="app-container">
 
           <!-- BANNER MÃOS LIVRES ATIVO (MENTA PASTEL) -->
           <v-alert
@@ -104,7 +104,7 @@
             type="success"
             variant="flat"
             icon="mdi-record-rec"
-            class="mb-6 rounded-xl border-pastel-mint shadow-sm"
+            class="mb-6 rounded-xl border-pastel-mint shadow-sm pulse-breathe"
           >
             <div class="d-flex align-center justify-space-between">
               <div>
@@ -121,7 +121,7 @@
             type="error"
             variant="flat"
             icon="mdi-alert-octagon-outline"
-            class="mb-6 rounded-xl shadow-md"
+            class="mb-6 rounded-xl shadow-md animate-fade-in"
             role="alert"
           >
             <div class="text-h6 font-weight-black mb-1">⚠️ ALERTA DE SEGURANÇA NO AMBIENTE</div>
@@ -132,162 +132,169 @@
             </ul>
           </v-alert>
 
-          <v-row>
+          <!-- GRID DOS CARDS PRINCIPAIS ALINHADOS -->
+          <v-row align="stretch">
             <!-- COLUNA ESQUERDA: CÂMERA & ZONA DE CAPTURA GIGANTE -->
-            <v-col cols="12" md="6">
-              <v-card class="pastel-card pa-5">
-                <div class="d-flex align-center justify-space-between mb-4">
-                  <div class="d-flex align-center">
-                    <v-avatar color="primary" size="36" class="mr-2">
-                      <v-icon icon="mdi-camera" color="white" size="20"></v-icon>
-                    </v-avatar>
-                    <span class="text-h6 font-weight-bold text-slate-900">Câmera em Tempo Real</span>
+            <v-col cols="12" md="6" class="d-flex flex-column">
+              <v-card class="pastel-card pa-6 flex-grow-1 d-flex flex-column justify-space-between">
+                <div>
+                  <div class="d-flex align-center justify-space-between mb-4">
+                    <div class="d-flex align-center">
+                      <v-avatar color="primary" size="38" class="mr-3">
+                        <v-icon icon="mdi-camera" color="white" size="22"></v-icon>
+                      </v-avatar>
+                      <span class="text-h6 font-weight-black text-slate-900">Câmera em Tempo Real</span>
+                    </div>
+
+                    <v-chip
+                      :color="isCameraActive ? 'success' : 'grey-lighten-1'"
+                      size="small"
+                      variant="flat"
+                      class="font-weight-bold"
+                    >
+                      {{ isCameraActive ? '● Câmera Ativa' : 'Desativada' }}
+                    </v-chip>
                   </div>
 
-                  <v-chip
-                    :color="isCameraActive ? 'success' : 'grey-lighten-1'"
-                    size="small"
-                    variant="flat"
-                    class="font-weight-bold"
+                  <!-- Feed da Câmera -->
+                  <div class="camera-wrapper mb-5">
+                    <video
+                      ref="videoRef"
+                      autoplay
+                      playsinline
+                      class="camera-feed"
+                      aria-label="Feed de vídeo da câmera em tempo real"
+                    ></video>
+                    <canvas ref="canvasRef" class="d-none"></canvas>
+
+                    <!-- Scanner Neon Pastel Animado -->
+                    <div v-if="isProcessing" class="scan-line-overlay"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <!-- BOTÃO GIGANTE DE CAPTURA (TACTILE-FIRST) -->
+                  <v-btn
+                    block
+                    size="x-large"
+                    class="btn-capture-giant text-h6 font-weight-black py-7 mb-4"
+                    :loading="isProcessing"
+                    @click="captureAndAnalyze()"
+                    aria-label="Capturar Foto e Analisar Ambiente (Atalho: Pressionar Espaço ou Enter)"
                   >
-                    {{ isCameraActive ? '● Câmera Ativa' : 'Desativada' }}
-                  </v-chip>
+                    <v-icon icon="mdi-camera-iris" size="32" class="mr-2"></v-icon>
+                    ANALISAR AMBIENTE (ESPAÇO)
+                  </v-btn>
+
+                  <!-- Campo de Pergunta Específica por Texto/Voz -->
+                  <v-text-field
+                    v-model="userQuestion"
+                    label="Pergunta por Voz / Texto Específica"
+                    placeholder="Ex: Qual a cor da minha camisa? Tem alguém aqui?"
+                    variant="outlined"
+                    density="comfortable"
+                    color="primary"
+                    clearable
+                    hide-details
+                    append-inner-icon="mdi-send-circle"
+                    @click:append-inner="captureAndAnalyze()"
+                    @keyup.enter="captureAndAnalyze()"
+                  ></v-text-field>
                 </div>
-
-                <!-- Feed da Câmera -->
-                <div class="camera-wrapper mb-5">
-                  <video
-                    ref="videoRef"
-                    autoplay
-                    playsinline
-                    class="camera-feed"
-                    aria-label="Feed de vídeo da câmera em tempo real"
-                  ></video>
-                  <canvas ref="canvasRef" class="d-none"></canvas>
-
-                  <!-- Scanner Neon Pastel Animado -->
-                  <div v-if="isProcessing" class="scan-line-overlay"></div>
-                </div>
-
-                <!-- BOTÃO GIGANTE DE CAPTURA (TACTILE-FIRST) -->
-                <v-btn
-                  block
-                  size="x-large"
-                  class="btn-capture-giant text-h6 font-weight-black py-7 mb-4"
-                  :loading="isProcessing"
-                  @click="captureAndAnalyze()"
-                  aria-label="Capturar Foto e Analisar Ambiente (Atalho: Pressionar Espaço ou Enter)"
-                >
-                  <v-icon icon="mdi-camera-iris" size="32" class="mr-2"></v-icon>
-                  ANALISAR AMBIENTE (ESPAÇO)
-                </v-btn>
-
-                <!-- Campo de Pergunta Específica por Texto/Voz -->
-                <v-text-field
-                  v-model="userQuestion"
-                  label="Pergunta por Voz / Texto Específica"
-                  placeholder="Ex: Qual a cor da minha camisa? Tem alguém aqui?"
-                  variant="outlined"
-                  density="comfortable"
-                  color="primary"
-                  clearable
-                  hide-details
-                  append-inner-icon="mdi-send-circle"
-                  @click:append-inner="captureAndAnalyze()"
-                  @keyup.enter="captureAndAnalyze()"
-                ></v-text-field>
               </v-card>
             </v-col>
 
             <!-- COLUNA DIREITA: RESULTADO DA PERCEPÇÃO & PROFUNDIDADE -->
-            <v-col cols="12" md="6">
-              <v-card class="pastel-card pa-5 h-100 d-flex flex-column">
-                <div class="d-flex align-center justify-space-between mb-4">
-                  <div class="d-flex align-center">
-                    <v-avatar color="secondary" size="36" class="mr-2">
-                      <v-icon icon="mdi-text-to-speech" color="white" size="20"></v-icon>
-                    </v-avatar>
-                    <span class="text-h6 font-weight-bold text-slate-900">Leitura Auditiva</span>
-                  </div>
-
-                  <v-chip
-                    v-if="latestAnalysis"
-                    :color="latestAnalysis.priority === 'HIGH' ? 'error' : 'secondary'"
-                    size="small"
-                    variant="flat"
-                    class="font-weight-bold"
-                  >
-                    {{ latestAnalysis.priority === 'HIGH' ? 'Prioridade Alta' : 'Normal' }}
-                  </v-chip>
-                </div>
-
-                <!-- Painel Menta Pastel de Resposta da IA -->
-                <div class="flex-grow-1 pastel-card-mint rounded-xl pa-5 mb-5 border-pastel-mint">
-                  <div v-if="isProcessing" class="text-center py-10">
-                    <v-progress-circular indeterminate color="primary" size="56" width="6" class="mb-4"></v-progress-circular>
-                    <div class="text-h6 font-weight-bold text-slate-800">Processando Imagem na RAM...</div>
-                    <div class="text-body-2 text-slate-600">Garantia de Retenção Zero (Nenhum dado é salvo).</div>
-                  </div>
-
-                  <div v-else-if="latestAnalysis">
-                    <div class="text-subtitle-1 font-weight-black text-slate-800 mb-2 d-flex align-center">
-                      <v-icon color="secondary" class="mr-2">mdi-account-voice</v-icon>
-                      Resposta Falada pelo Assistente:
-                    </div>
-                    
-                    <p class="text-h6 font-weight-bold text-slate-900 leading-relaxed mb-4">
-                      "{{ latestAnalysis.speechText }}"
-                    </p>
-
-                    <v-divider class="my-4"></v-divider>
-
-                    <!-- CHIPS PASTÉIS DE PROFUNDIDADE E PESSOA DETECTADA -->
-                    <div class="d-flex align-center flex-wrap gap-2 mb-4">
-                      <v-chip color="info" size="medium" variant="flat" class="font-weight-bold">
-                        <v-icon start icon="mdi-ruler"></v-icon>
-                        Profundidade: {{ latestAnalysis.proximityEstimate || '1,2 m' }}
-                      </v-chip>
-
-                      <v-chip v-if="latestAnalysis.humanDetected" color="success" size="medium" variant="flat" class="font-weight-bold">
-                        <v-icon start icon="mdi-account-check"></v-icon>
-                        Pessoa Detectada
-                      </v-chip>
-
-                      <v-chip v-else color="grey-darken-1" size="medium" variant="flat" class="font-weight-bold">
-                        <v-icon start icon="mdi-account-off"></v-icon>
-                        Sem Pessoas na Cena
-                      </v-chip>
+            <v-col cols="12" md="6" class="d-flex flex-column">
+              <v-card class="pastel-card pa-6 flex-grow-1 d-flex flex-column justify-space-between">
+                <div>
+                  <div class="d-flex align-center justify-space-between mb-4">
+                    <div class="d-flex align-center">
+                      <v-avatar color="secondary" size="38" class="mr-3">
+                        <v-icon icon="mdi-text-to-speech" color="white" size="22"></v-icon>
+                      </v-avatar>
+                      <span class="text-h6 font-weight-black text-slate-900">Leitura Auditiva</span>
                     </div>
 
-                    <!-- Lista de Objetos Visíveis Identificados -->
-                    <div v-if="latestAnalysis.detectedObjects && latestAnalysis.detectedObjects.length > 0">
-                      <div class="text-subtitle-2 font-weight-bold text-slate-700 mb-2">
-                        📦 Elementos Visíveis Identificados:
+                    <v-chip
+                      v-if="latestAnalysis"
+                      :color="latestAnalysis.priority === 'HIGH' ? 'error' : 'secondary'"
+                      size="small"
+                      variant="flat"
+                      class="font-weight-bold"
+                    >
+                      {{ latestAnalysis.priority === 'HIGH' ? 'Prioridade Alta' : 'Normal' }}
+                    </v-chip>
+                  </div>
+
+                  <!-- Painel Menta Pastel de Resposta da IA -->
+                  <div class="pastel-card-mint rounded-2xl pa-5 mb-5 border-pastel-mint">
+                    <div v-if="isProcessing" class="text-center py-10">
+                      <v-progress-circular indeterminate color="primary" size="56" width="6" class="mb-4"></v-progress-circular>
+                      <div class="text-h6 font-weight-bold text-slate-800">Processando Imagem na RAM...</div>
+                      <div class="text-body-2 text-slate-600">Garantia de Retenção Zero (Nenhum dado é salvo).</div>
+                    </div>
+
+                    <div v-else-if="latestAnalysis" class="animate-fade-in">
+                      <div class="text-subtitle-1 font-weight-black text-slate-800 mb-2 d-flex align-center">
+                        <v-icon color="secondary" class="mr-2">mdi-account-voice</v-icon>
+                        Resposta Falada pelo Assistente:
                       </div>
-                      <div class="d-flex flex-wrap gap-1">
-                        <v-chip
-                          v-for="(obj, idx) in latestAnalysis.detectedObjects"
-                          :key="idx"
-                          size="small"
-                          color="slate-800"
-                          variant="tonal"
-                          class="font-weight-bold"
-                        >
-                          {{ obj }}
+                      
+                      <p class="text-h6 font-weight-bold text-slate-900 leading-relaxed mb-4">
+                        "{{ latestAnalysis.speechText }}"
+                      </p>
+
+                      <v-divider class="my-4"></v-divider>
+
+                      <!-- CHIPS PASTÉIS DE PROFUNDIDADE E PESSOA DETECTADA -->
+                      <div class="d-flex align-center flex-wrap gap-2 mb-4">
+                        <v-chip color="info" size="medium" variant="flat" class="font-weight-bold">
+                          <v-icon start icon="mdi-ruler"></v-icon>
+                          Profundidade: {{ latestAnalysis.proximityEstimate || '1,2 m' }}
+                        </v-chip>
+
+                        <v-chip v-if="latestAnalysis.humanDetected" color="success" size="medium" variant="flat" class="font-weight-bold">
+                          <v-icon start icon="mdi-account-check"></v-icon>
+                          Pessoa Detectada
+                        </v-chip>
+
+                        <v-chip v-else color="grey-darken-1" size="medium" variant="flat" class="font-weight-bold">
+                          <v-icon start icon="mdi-account-off"></v-icon>
+                          Sem Pessoas na Cena
                         </v-chip>
                       </div>
-                    </div>
-                  </div>
 
-                  <div v-else class="text-center py-10 text-slate-500">
-                    <v-icon size="64" color="slate-400" class="mb-3">mdi-eye-scan-outline</v-icon>
-                    <div class="text-h6 font-weight-bold text-slate-800 mb-1">Pronto para Analisar</div>
-                    <div class="text-body-1">Pressione a tecla <strong>ESPAÇO</strong> ou toque no botão para capturar a cena.</div>
+                      <!-- Lista de Objetos Visíveis Identificados -->
+                      <div v-if="latestAnalysis.detectedObjects && latestAnalysis.detectedObjects.length > 0">
+                        <div class="text-subtitle-2 font-weight-bold text-slate-700 mb-2">
+                          📦 Elementos Visíveis Identificados:
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                          <v-chip
+                            v-for="(obj, idx) in latestAnalysis.detectedObjects"
+                            :key="idx"
+                            size="small"
+                            color="slate-800"
+                            variant="tonal"
+                            class="font-weight-bold"
+                          >
+                            {{ obj }}
+                          </v-chip>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-else class="text-center py-10 text-slate-500">
+                      <v-icon size="64" color="slate-400" class="mb-3">mdi-eye-scan-outline</v-icon>
+                      <div class="text-h6 font-weight-bold text-slate-800 mb-1">Pronto para Analisar</div>
+                      <div class="text-body-1">Pressione a tecla <strong>ESPAÇO</strong> ou toque no botão para capturar a cena.</div>
+                    </div>
                   </div>
                 </div>
 
                 <!-- BOTÕES DE AÇÃO REPETIR / PERGUNTAR -->
-                <div class="d-flex gap-3">
+                <div class="d-flex gap-3 mt-4">
                   <v-btn
                     color="primary"
                     variant="flat"
@@ -314,7 +321,7 @@
               </v-card>
             </v-col>
           </v-row>
-        </v-container>
+        </div>
       </v-main>
 
       <!-- MODAL DE INSTRUÇÕES DE VOZ E TECLADO -->
