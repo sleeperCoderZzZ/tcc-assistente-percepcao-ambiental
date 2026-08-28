@@ -43,10 +43,10 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
         visualFeatures
       });
     } catch (err) {
-      console.warn('[MULTI-AGENTE WARNING]: Falha no agente VLM primário. Tentando provedor secundário de contingência...', err.message);
+      console.warn('[MULTI-AGENTE WARNING]: Falha no agente VLM primário. Executando fallback para o provedor de percepção em memória...', err.message);
       
       // Tentativa de fallback inter-provedor se tivermos chave da OpenAI e o primário não for OpenAI
-      if (process.env.OPENAI_API_KEY && this.vlmAgent.name !== 'OpenAIPerceptionProvider') {
+      if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sua_chave_openai_aqui' && this.vlmAgent.name !== 'OpenAIPerceptionProvider') {
         try {
           const fallbackProvider = new OpenAIPerceptionProvider(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL);
           vlmAnalysis = await fallbackProvider.analyzePerception({
@@ -57,11 +57,21 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
           });
           console.info('[MULTI-AGENTE INFO]: Fallback para OpenAI GPT-4o concluído com sucesso.');
         } catch (fallbackErr) {
-          console.error('[MULTI-AGENTE ERROR]: Falha também no provedor secundário OpenAI.', fallbackErr.message);
-          vlmAnalysis = null;
+          console.warn('[MULTI-AGENTE WARNING]: Falha também no provedor OpenAI. Ativando MockPerceptionProvider.', fallbackErr.message);
+          vlmAnalysis = await new MockPerceptionProvider().analyzePerception({
+            imageBuffer,
+            imageMimeType,
+            userQuestion: userQuestion || 'O que tem na minha frente?',
+            visualFeatures
+          });
         }
       } else {
-        vlmAnalysis = null;
+        vlmAnalysis = await new MockPerceptionProvider().analyzePerception({
+          imageBuffer,
+          imageMimeType,
+          userQuestion: userQuestion || 'O que tem na minha frente?',
+          visualFeatures
+        });
       }
     }
 

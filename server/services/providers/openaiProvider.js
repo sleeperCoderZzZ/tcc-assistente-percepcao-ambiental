@@ -18,8 +18,7 @@ class OpenAIPerceptionProvider extends BasePerceptionProvider {
     }
 
     const mime = imageMimeType || 'image/jpeg';
-    const base64Data = imageBuffer.toString('base64');
-    const dataUrl = `data:${mime};base64,${base64Data}`;
+    const base64Data = imageBuffer ? imageBuffer.toString('base64') : null;
 
     const prompt = `Assistente visual para cegos. Analise a imagem real. Pergunta: "${userQuestion || 'O que tem na minha frente?'}"
 Regras: 1. Apenas elementos visíveis reais. 2. Estime profundidade/distância exata (ex: '0,4 m', '1,2 m', '2,5 m'). 3. humanDetected=true apenas se houver pessoa real. 4. priority=HIGH e hazards APENAS para risco iminente de colisão/queda. 5. speechText: fala humana, clara e direta.
@@ -27,20 +26,22 @@ Regras: 1. Apenas elementos visíveis reais. 2. Estime profundidade/distância e
 Retorne APENAS JSON:
 {"priority":"NORMAL"|"HIGH","humanDetected":bool,"humanDetails":string|null,"proximityEstimate":string,"detectedObjects":[string],"hazards":[string],"description":string,"speechText":string}`;
 
+    const content = [{ type: "text", text: prompt }];
+    if (base64Data) {
+      content.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${mime};base64,${base64Data}`
+        }
+      });
+    }
+
     const payload = {
       model: this.modelName,
       messages: [
         {
           role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: dataUrl
-              }
-            }
-          ]
+          content: content
         }
       ],
       response_format: { type: "json_object" },

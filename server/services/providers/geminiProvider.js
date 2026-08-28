@@ -18,12 +18,30 @@ class GeminiPerceptionProvider extends BasePerceptionProvider {
     }
 
     const mime = imageMimeType || 'image/jpeg';
-    const base64Data = imageBuffer.toString('base64');
+    const base64Data = imageBuffer ? imageBuffer.toString('base64') : null;
     const prompt = `Assistente visual para cegos. Analise a imagem real. Pergunta: "${userQuestion || 'O que tem na minha frente?'}"
 Regras: 1. Apenas elementos visíveis reais. 2. Estime profundidade/distância exata (ex: '0,4 m', '1,2 m', '2,5 m'). 3. humanDetected=true apenas se houver pessoa real. 4. priority=HIGH e hazards APENAS para risco iminente de colisão/queda. 5. speechText: fala humana, clara e direta.
 
 Retorne APENAS JSON:
 {"priority":"NORMAL"|"HIGH","humanDetected":bool,"humanDetails":string|null,"proximityEstimate":string,"detectedObjects":[string],"hazards":[string],"description":string,"speechText":string}`;
+
+    const parts = [{ text: prompt }];
+    if (base64Data) {
+      parts.push({
+        inlineData: {
+          mimeType: mime,
+          data: base64Data
+        }
+      });
+    }
+
+    const payload = {
+      contents: [{ parts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.1
+      }
+    };
 
     // Lista de modelos candidatos (v3+, v2.5, Pro e Flash) em ordem de preferência
     const candidateModels = Array.from(new Set([
@@ -39,24 +57,6 @@ Retorne APENAS JSON:
       'gemini-1.5-pro',
       'gemini-1.5-flash'
     ].filter(Boolean)));
-
-    const payload = {
-      contents: [{
-        parts: [
-          { text: prompt },
-          {
-            inlineData: {
-              mimeType: mime,
-              data: base64Data
-            }
-          }
-        ]
-      }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.1
-      }
-    };
 
     let lastError = null;
 

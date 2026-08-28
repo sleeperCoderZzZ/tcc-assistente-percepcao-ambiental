@@ -1,28 +1,60 @@
 /**
  * ASSISTENTE DE PERCEPÇÃO AMBIENTAL PARA DEFICIENTES VISUAIS (TCC - RETENÇÃO ZERO)
- * Aplicação Vue.js 3 com Vuetify 3, Controle por Voz Contínuo (STT), Sintetizador Humano (TTS)
- * e Sonificação Web Audio API.
+ * Identidade Visual Pastel Premium com Vuetify 3, Controle por Voz Contínuo (STT),
+ * Sintetizador Humano (TTS) e Sonificação Web Audio API.
  */
 
 const { createApp, ref, computed, onMounted } = Vue;
 const { createVuetify } = Vuetify;
 
 const vuetify = createVuetify({
+  components: Vuetify.components || {},
+  directives: Vuetify.directives || {},
+  defaults: {
+    VBtn: {
+      rounded: 'xl',
+      elevation: 0
+    },
+    VCard: {
+      rounded: 'xl',
+      elevation: 0
+    },
+    VAlert: {
+      rounded: 'lg'
+    },
+    VChip: {
+      rounded: 'lg'
+    },
+    VTextField: {
+      variant: 'outlined',
+      density: 'comfortable',
+      color: 'primary'
+    }
+  },
   theme: {
     defaultTheme: 'pastelTheme',
     themes: {
       pastelTheme: {
         dark: false,
         colors: {
-          primary: '#0284C7',     /* Azul Sereno */
-          secondary: '#7C3AED',   /* Lavanda Suave */
+          primary: '#0284C7',        /* Azul Oceânico */
+          'primary-light': '#E0F2FE',
+          secondary: '#7C3AED',      /* Lavanda Suave */
+          'secondary-light': '#F3E8FF',
           surface: '#FFFFFF',
           'surface-variant': '#F8FAFC',
-          accent: '#0D9488',      /* Menta Escuro */
-          emerald: '#10B981',
-          error: '#DC2626',
-          warning: '#D97706',
-          info: '#0284C7'
+          accent: '#0D9488',         /* Menta Profundo */
+          emerald: '#059669',        /* Menta Esmeralda */
+          'emerald-light': '#D1FAE5',
+          error: '#E11D48',          /* Rosa Coral Alerta */
+          'error-light': '#FFE4E6',
+          warning: '#D97706',        /* Âmbar Solar */
+          'warning-light': '#FEF3C7',
+          info: '#0284C7',
+          'slate-400': '#94A3B8',
+          'slate-600': '#475569',
+          'slate-800': '#1E293B',
+          'grey-lighten-1': '#E2E8F0'
         }
       }
     }
@@ -31,7 +63,7 @@ const vuetify = createVuetify({
 
 const app = createApp({
   setup() {
-    // Refs reativas
+    // Refs reativas de estado
     const videoRef = ref(null);
     const canvasRef = ref(null);
     const isCameraActive = ref(false);
@@ -41,6 +73,8 @@ const app = createApp({
     const userQuestion = ref('');
     const latestAnalysis = ref(null);
     const lastSpeechText = ref('');
+    const hasError = ref(false);
+    const errorMessage = ref('');
     
     let mediaStream = null;
     let speechSynth = window.speechSynthesis;
@@ -218,10 +252,19 @@ const app = createApp({
       }
     }
 
+    // Recuperação em caso de erro (Retry)
+    function retryCapture() {
+      hasError.value = false;
+      errorMessage.value = '';
+      captureAndAnalyze();
+    }
+
     // Capturar Foto e Enviar para o Backend Express (Retenção Zero)
     async function captureAndAnalyze() {
       if (isProcessing.value) return;
 
+      hasError.value = false;
+      errorMessage.value = '';
       playTone(659.25, 0.12); // Som de acionamento
       if (navigator.vibrate) navigator.vibrate(100); // Feedback tátil
 
@@ -269,6 +312,8 @@ const app = createApp({
       canvas.toBlob(async (blob) => {
         if (!blob) {
           isProcessing.value = false;
+          hasError.value = true;
+          errorMessage.value = 'Erro ao capturar a moldura da imagem da câmera.';
           speakNaturalText('Erro ao capturar a imagem.');
           return;
         }
@@ -276,6 +321,7 @@ const app = createApp({
         const formData = new FormData();
         formData.append('image', blob, 'capture.jpg');
         if (userQuestion.value) {
+          formData.append('question', userQuestion.value);
           formData.append('userQuestion', userQuestion.value);
         }
 
@@ -297,13 +343,16 @@ const app = createApp({
           }
 
           const result = await response.json();
-          latestAnalysis.value = result;
-          lastSpeechText.value = result.speechText || result.description;
+          const analysisData = (result && result.data) ? result.data : result;
+
+          latestAnalysis.value = analysisData;
+          lastSpeechText.value = analysisData.speechText || analysisData.description || '';
 
           isProcessing.value = false;
+          hasError.value = false;
 
           // Perigo/Emergência
-          if (result.priority === 'HIGH' || (result.hazards && result.hazards.length > 0)) {
+          if (analysisData.priority === 'HIGH' || (analysisData.hazards && analysisData.hazards.length > 0)) {
             playTone(987.77, 0.4, 'sawtooth'); // Beep de alerta de perigo
             if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
           } else {
@@ -311,13 +360,15 @@ const app = createApp({
           }
 
           // Leitura por voz humana imediata
-          speakNaturalText(lastSpeechText.value, result.priority);
+          speakNaturalText(lastSpeechText.value, analysisData.priority);
 
         } catch (err) {
           console.error('Erro na requisição /api/perceive:', err);
           isProcessing.value = false;
-          const errMsg = 'Desculpe, ocorreu uma falha na conexão com a inteligência visual. Tente novamente.';
-          speakNaturalText(errMsg);
+          hasError.value = true;
+          errorMessage.value = 'Falha de conexão com a inteligência visual. Verifique a rede e tente novamente.';
+          playTone(300, 0.3, 'sawtooth');
+          speakNaturalText(errorMessage.value);
         }
       }, 'image/jpeg', 0.85);
     }
@@ -356,7 +407,10 @@ const app = createApp({
       userQuestion,
       latestAnalysis,
       lastSpeechText,
+      hasError,
+      errorMessage,
       captureAndAnalyze,
+      retryCapture,
       repeatAudio,
       toggleVoiceListening,
       askWithVoicePrompt

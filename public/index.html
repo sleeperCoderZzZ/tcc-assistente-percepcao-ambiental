@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura Vue.js 3 com Vuetify 3 local, retenção zero de dados e acessibilidade total por voz.">
-  <meta name="theme-color" content="#E0F2FE">
+  <meta name="theme-color" content="#0284C7">
   <title>Assistente de Percepção Ambiental — Retenção Zero</title>
 
   <!-- Google Fonts: Inter & Outfit -->
@@ -32,17 +32,18 @@
 
   <div id="app">
     <v-app class="pastel-theme">
-      <!-- App Bar Clean Pastel -->
-      <v-app-bar flat color="surface-variant" class="border-b px-2" role="banner">
-        <v-avatar color="primary" class="mr-3" size="44">
-          <v-icon icon="mdi-eye-outline" color="white"></v-icon>
+      <!-- App Bar Clean Glassmorphic Pastel -->
+      <v-app-bar flat color="surface" class="border-b px-4 glass-card" role="banner" height="76">
+        <v-avatar color="primary-light" class="mr-3 border-pastel" size="48">
+          <v-icon icon="mdi-eye-outline" color="primary" size="28"></v-icon>
         </v-avatar>
 
         <div>
-          <v-app-bar-title class="font-weight-bold text-h6 text-slate-800">
-            Percepção Ambiental <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold ml-1">VLM AI</v-chip>
+          <v-app-bar-title class="font-weight-bold text-h6 text-slate-800 d-flex align-center">
+            Percepção Ambiental
+            <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold ml-2 text-uppercase">VLM AI</v-chip>
           </v-app-bar-title>
-          <div class="text-caption text-medium-emphasis">Arquitetura de Retenção Zero de Dados (TCC)</div>
+          <div class="text-caption text-slate-500 font-weight-medium">Arquitetura de Retenção Zero de Dados (TCC)</div>
         </div>
 
         <v-spacer></v-spacer>
@@ -54,7 +55,7 @@
           icon
           class="mr-2"
           @click="toggleVoiceListening"
-          aria-label="Alternar Escuta de Voz Contínua"
+          aria-label="Alternar Escuta de Voz Contínua (Atalho: V)"
         >
           <v-icon :icon="isVoiceListening ? 'mdi-microphone' : 'mdi-microphone-off'"></v-icon>
         </v-btn>
@@ -66,7 +67,7 @@
           class="mr-2"
           @click="repeatAudio"
           :disabled="!lastSpeechText"
-          aria-label="Repetir Leitura de Áudio"
+          aria-label="Repetir Leitura de Áudio (Atalho: R)"
         >
           <v-icon icon="mdi-volume-high"></v-icon>
         </v-btn>
@@ -76,14 +77,14 @@
           variant="tonal"
           icon
           @click="showHelpDialog = true"
-          aria-label="Abrir Ajuda e Atalhos"
+          aria-label="Abrir Instruções de Ajuda e Atalhos"
         >
           <v-icon icon="mdi-help-circle-outline"></v-icon>
         </v-btn>
       </v-app-bar>
 
       <!-- Conteúdo Principal -->
-      <v-main id="main-content" class="bg-pastel-slate py-6 px-4" tabindex="-1">
+      <v-main id="main-content" class="py-8 px-4" tabindex="-1" role="main">
         <v-container class="max-width-lg">
           
           <!-- Banner de Status do Modo Mãos Livres -->
@@ -91,9 +92,9 @@
             v-if="isVoiceListening"
             type="success"
             variant="tonal"
-            density="compact"
+            density="comfortable"
             icon="mdi-record-rec"
-            class="mb-4 text-body-2 font-weight-medium border-emerald"
+            class="mb-5 text-body-2 font-weight-medium border-emerald rounded-lg shadow-soft"
           >
             <span class="font-weight-bold">Modo Mãos Livres Ativo:</span> Diga <em>"Capturar"</em>, <em>"O que tem na minha frente?"</em> ou <em>"Repetir"</em>.
           </v-alert>
@@ -104,7 +105,7 @@
             type="error"
             variant="flat"
             icon="mdi-alert-octagon"
-            class="mb-6 rounded-lg shadow-sm"
+            class="mb-6 rounded-xl shadow-pastel-danger fade-in-up"
             role="alert"
           >
             <div class="text-h6 font-weight-bold mb-1">⚠️ ALERTA DE PERIGO NO AMBIENTE</div>
@@ -116,12 +117,14 @@
           </v-alert>
 
           <v-row>
-            <!-- COLUNA ESQUERDA: Câmera & Captura -->
+            <!-- COLUNA ESQUERDA: Câmera & Captura Tátil -->
             <v-col cols="12" md="6">
-              <v-card class="rounded-xl shadow-soft border-pastel overflow-hidden pa-4">
-                <div class="d-flex align-center justify-space-between mb-3">
+              <v-card class="glass-card rounded-2xl pa-5 h-100 d-flex flex-column">
+                <div class="d-flex align-center justify-space-between mb-4">
                   <div class="d-flex align-center">
-                    <v-icon color="primary" class="mr-2">mdi-camera</v-icon>
+                    <v-avatar color="primary-light" size="36" class="mr-3">
+                      <v-icon color="primary" size="20">mdi-camera</v-icon>
+                    </v-avatar>
                     <span class="text-h6 font-weight-bold text-slate-800">Visualização da Câmera</span>
                   </div>
                   <v-chip
@@ -130,18 +133,19 @@
                     variant="flat"
                     class="font-weight-bold"
                   >
-                    {{ isCameraActive ? '● Câmera Ativa' : 'Desativada' }}
+                    <span v-if="isCameraActive" class="pulse-badge"></span>
+                    {{ isCameraActive ? 'Câmera Ativa' : 'Desativada' }}
                   </v-chip>
                 </div>
 
                 <!-- Feed da Câmera em Tempo Real -->
-                <div class="camera-wrapper rounded-lg relative overflow-hidden bg-slate-900 mb-4">
+                <div class="camera-wrapper rounded-xl relative overflow-hidden bg-slate-900 mb-5">
                   <video
                     ref="videoRef"
                     autoplay
                     playsinline
                     class="camera-feed"
-                    aria-label="Feed de vídeo em tempo real da câmera"
+                    aria-label="Feed de vídeo em tempo real da câmera do dispositivo"
                   ></video>
                   <canvas ref="canvasRef" class="d-none"></canvas>
 
@@ -149,23 +153,23 @@
                   <div v-if="isProcessing" class="scan-line-overlay"></div>
                 </div>
 
-                <!-- ZONA GIGANTE DE TOCAR / CAPTURAR (Tactile-First) -->
+                <!-- ZONA GIGANTE DE TOCAR / CAPTURAR (Tactile-First Cego-First) -->
                 <v-btn
                   block
                   size="x-large"
                   color="primary"
                   variant="flat"
-                  class="text-h6 font-weight-bold py-6 rounded-xl shadow-pastel border-primary"
+                  class="text-h6 font-weight-bold py-7 rounded-xl shadow-pastel-primary border-primary mb-4"
                   :loading="isProcessing"
                   @click="captureAndAnalyze()"
-                  aria-label="Capturar Foto e Analisar Ambiente (Atalho: Espaço ou Enter)"
+                  aria-label="Capturar Foto e Analisar Ambiente Agora (Atalho: Pressione Espaço ou Enter)"
                 >
-                  <v-icon icon="mdi-camera-iris" size="large" class="mr-2"></v-icon>
+                  <v-icon icon="mdi-camera-iris" size="28" class="mr-3"></v-icon>
                   ANALISAR AGORA (ESPAÇO)
                 </v-btn>
 
                 <!-- Input de Pergunta por Voz/Texto -->
-                <div class="mt-4">
+                <div class="mt-auto">
                   <v-text-field
                     v-model="userQuestion"
                     label="Pergunta Específica (Opcional)"
@@ -178,22 +182,25 @@
                     append-inner-icon="mdi-send-circle"
                     @click:append-inner="captureAndAnalyze()"
                     @keyup.enter="captureAndAnalyze()"
+                    aria-label="Digitar pergunta específica sobre o ambiente para a inteligência artificial"
                   ></v-text-field>
                 </div>
               </v-card>
             </v-col>
 
-            <!-- COLUNA DIREITA: Resultados da Percepção & Profundidade -->
+            <!-- COLUNA DIREITA: Resultados da Percepção (4 Estados Completo) -->
             <v-col cols="12" md="6">
-              <v-card class="rounded-xl shadow-soft border-pastel pa-4 h-100 d-flex flex-column">
-                <div class="d-flex align-center justify-space-between mb-3">
+              <v-card class="glass-card rounded-2xl pa-5 h-100 d-flex flex-column">
+                <div class="d-flex align-center justify-space-between mb-4">
                   <div class="d-flex align-center">
-                    <v-icon color="secondary" class="mr-2">mdi-text-to-speech</v-icon>
+                    <v-avatar color="secondary-light" size="36" class="mr-3">
+                      <v-icon color="secondary" size="20">mdi-text-to-speech</v-icon>
+                    </v-avatar>
                     <span class="text-h6 font-weight-bold text-slate-800">Resultado da Percepção</span>
                   </div>
 
                   <v-chip
-                    v-if="latestAnalysis"
+                    v-if="latestAnalysis && !isProcessing && !hasError"
                     :color="latestAnalysis.priority === 'HIGH' ? 'error' : 'secondary'"
                     size="small"
                     variant="flat"
@@ -203,17 +210,52 @@
                   </v-chip>
                 </div>
 
-                <!-- Conteúdo da Leitura / Resposta da IA -->
-                <div class="flex-grow-1 bg-pastel-mint rounded-lg pa-4 mb-4 border-mint">
-                  <div v-if="isProcessing" class="text-center py-8">
-                    <v-progress-circular indeterminate color="primary" size="48" width="5" class="mb-3"></v-progress-circular>
-                    <div class="text-subtitle-1 font-weight-bold text-slate-700">Analisando imagem em memória RAM...</div>
-                    <div class="text-caption text-slate-500">Nenhum dado é salvo em disco (Retenção Zero).</div>
+                <!-- Conteúdo do Card em 4 Estados -->
+                <div class="flex-grow-1 bg-pastel-mint rounded-xl pa-5 mb-5 border-mint d-flex flex-column justify-center shadow-soft">
+
+                  <!-- ESTADO 1: LOADING (Com Skeleton Loader Animado) -->
+                  <div v-if="isProcessing" class="py-4">
+                    <div class="d-flex align-center mb-4">
+                      <v-progress-circular indeterminate color="primary" size="32" width="4" class="mr-3"></v-progress-circular>
+                      <span class="text-subtitle-1 font-weight-bold text-slate-800">Analisando imagem em memória RAM...</span>
+                    </div>
+
+                    <!-- Skeleton de texto e chips -->
+                    <div class="skeleton-shimmer mb-3" style="height: 22px; width: 92%;"></div>
+                    <div class="skeleton-shimmer mb-3" style="height: 22px; width: 80%;"></div>
+                    <div class="skeleton-shimmer mb-4" style="height: 22px; width: 65%;"></div>
+
+                    <div class="d-flex gap-2">
+                      <div class="skeleton-shimmer" style="height: 34px; width: 130px; border-radius: 16px;"></div>
+                      <div class="skeleton-shimmer" style="height: 34px; width: 150px; border-radius: 16px;"></div>
+                    </div>
+                    <div class="text-caption text-slate-500 mt-4 text-center">Nenhum dado é salvo em disco (Retenção Zero).</div>
                   </div>
 
-                  <div v-else-if="latestAnalysis">
-                    <div class="text-h6 font-weight-bold text-slate-800 mb-2">
-                      💬 Resposta Falada:
+                  <!-- ESTADO 2: ERRO (Com Botão de Re-tentativa / Retry) -->
+                  <div v-else-if="hasError" class="text-center py-6 fade-in-up">
+                    <v-icon size="64" color="error" class="mb-3">mdi-alert-circle-outline</v-icon>
+                    <div class="text-h6 font-weight-bold text-slate-800 mb-2">Falha na Conexão Visual</div>
+                    <p class="text-body-2 text-slate-600 mb-5">
+                      {{ errorMessage || 'Não foi possível conectar com o serviço de inteligência ambiental.' }}
+                    </p>
+                    <v-btn
+                      color="error"
+                      variant="flat"
+                      size="large"
+                      class="font-weight-bold px-6 rounded-lg shadow-pastel-danger"
+                      @click="retryCapture"
+                    >
+                      <v-icon start icon="mdi-refresh"></v-icon>
+                      Tentar Novamente
+                    </v-btn>
+                  </div>
+
+                  <!-- ESTADO 3: SUCESSO (Resultado da Percepção Carregado) -->
+                  <div v-else-if="latestAnalysis" class="fade-in-up">
+                    <div class="text-subtitle-1 font-weight-bold text-slate-800 mb-2 d-flex align-center">
+                      <v-icon color="primary" class="mr-2" size="20">mdi-volume-high</v-icon>
+                      Resposta Falada:
                     </div>
                     <p class="text-body-1 font-weight-medium text-slate-700 leading-relaxed mb-4">
                       "{{ latestAnalysis.speechText }}"
@@ -233,7 +275,7 @@
                         Pessoa Detectada
                       </v-chip>
 
-                      <v-chip v-else color="grey" size="medium" variant="tonal" class="font-weight-bold">
+                      <v-chip v-else color="grey-darken-1" size="medium" variant="tonal" class="font-weight-bold">
                         <v-icon start icon="mdi-account-off"></v-icon>
                         Sem Pessoas
                       </v-chip>
@@ -241,10 +283,10 @@
 
                     <!-- Lista de Objetos Detectados -->
                     <div v-if="latestAnalysis.detectedObjects && latestAnalysis.detectedObjects.length > 0">
-                      <div class="text-subtitle-2 font-weight-bold text-slate-600 mb-1">
+                      <div class="text-subtitle-2 font-weight-bold text-slate-600 mb-2">
                         📦 Elementos Visíveis Identificados:
                       </div>
-                      <div class="d-flex flex-wrap gap-1">
+                      <div class="d-flex flex-wrap gap-2">
                         <v-chip
                           v-for="(obj, idx) in latestAnalysis.detectedObjects"
                           :key="idx"
@@ -259,22 +301,27 @@
                     </div>
                   </div>
 
-                  <div v-else class="text-center py-8 text-slate-500">
-                    <v-icon size="56" color="slate-300" class="mb-2">mdi-eye-check-outline</v-icon>
-                    <div class="text-subtitle-1 font-weight-bold">Pronto para Analisar</div>
-                    <div class="text-body-2">Pressione ESPAÇO ou toque no botão para capturar o ambiente.</div>
+                  <!-- ESTADO 4: VAZIO / INICIAL (Pronto para Analisar) -->
+                  <div v-else class="text-center py-6 text-slate-500">
+                    <v-icon size="68" color="primary" class="mb-3 float-icon">mdi-eye-check-outline</v-icon>
+                    <div class="text-h6 font-weight-bold text-slate-800 mb-1">Pronto para Analisar</div>
+                    <div class="text-body-2 text-slate-600 max-width-xs mx-auto">
+                      Pressione a tecla <kbd>ESPAÇO</kbd> ou toque no botão gigante de análise para capturar a cena.
+                    </div>
                   </div>
+
                 </div>
 
                 <!-- Botões de Ação do Resultado -->
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-3">
                   <v-btn
                     color="primary"
                     variant="tonal"
-                    class="flex-grow-1 font-weight-bold rounded-lg"
+                    class="flex-grow-1 font-weight-bold rounded-xl py-3"
                     size="large"
                     :disabled="!lastSpeechText"
                     @click="repeatAudio"
+                    aria-label="Repetir Leitura por Voz Humana (Atalho: R)"
                   >
                     <v-icon start icon="mdi-volume-high"></v-icon>
                     Repetir Voz (R)
@@ -283,9 +330,10 @@
                   <v-btn
                     color="secondary"
                     variant="tonal"
-                    class="font-weight-bold rounded-lg"
+                    class="font-weight-bold rounded-xl py-3"
                     size="large"
                     @click="askWithVoicePrompt"
+                    aria-label="Ativar microfone para Falar Pergunta por Voz"
                   >
                     <v-icon start icon="mdi-microphone"></v-icon>
                     Falar Pergunta
@@ -298,34 +346,36 @@
       </v-main>
 
       <!-- Modal de Instruções e Ajuda -->
-      <v-dialog v-model="showHelpDialog" max-width="550">
-        <v-card class="rounded-xl pa-4">
-          <v-card-title class="d-flex align-center text-h6 font-weight-bold text-slate-800">
-            <v-icon color="primary" class="mr-2">mdi-accessibility-fit</v-icon>
+      <v-dialog v-model="showHelpDialog" max-width="560">
+        <v-card class="glass-card rounded-2xl pa-6">
+          <v-card-title class="d-flex align-center text-h6 font-weight-bold text-slate-800 mb-2">
+            <v-avatar color="primary-light" size="36" class="mr-3">
+              <v-icon color="primary" size="22">mdi-accessibility-fit</v-icon>
+            </v-avatar>
             Como Usar por Voz e Teclado
           </v-card-title>
 
           <v-card-text class="text-body-1 text-slate-700">
-            <p class="mb-3">Este aplicativo foi totalmente desenhado para ser operado <strong>sem enxergar a tela</strong>:</p>
+            <p class="mb-4">Este aplicativo foi desenhado com arquitetura <strong>Cego-First</strong> para ser operado inteiramente por voz ou teclado sem enxergar a tela:</p>
 
-            <div class="text-subtitle-2 font-weight-bold text-primary mb-1">🎤 Comandos de Voz (Modo Mãos Livres):</div>
-            <ul class="pl-4 mb-4">
-              <li><strong>"Capturar"</strong> ou <strong>"Analisar"</strong>: Tira a foto e lê a cena.</li>
-              <li><strong>"O que tem na minha frente?"</strong>: Faz a pergunta e analisa a imagem.</li>
+            <div class="text-subtitle-2 font-weight-bold text-primary mb-2">🎤 Comandos de Voz (Modo Mãos Livres):</div>
+            <ul class="pl-4 mb-5 leading-relaxed">
+              <li><strong>"Capturar"</strong> ou <strong>"Analisar"</strong>: Tira a foto e realiza a leitura do ambiente.</li>
+              <li><strong>"O que tem na minha frente?"</strong>: Faz a pergunta e analisa a cena em tempo real.</li>
               <li><strong>"Repetir"</strong>: Ouve a última resposta novamente.</li>
             </ul>
 
-            <div class="text-subtitle-2 font-weight-bold text-primary mb-1">⌨️ Atalhos de Teclado:</div>
-            <ul class="pl-4 mb-3">
-              <li><kbd>Espaço</kbd> ou <kbd>Enter</kbd>: Capturar e analisar foto.</li>
+            <div class="text-subtitle-2 font-weight-bold text-primary mb-2">⌨️ Atalhos de Teclado:</div>
+            <ul class="pl-4 mb-4 leading-relaxed">
+              <li><kbd>Espaço</kbd> ou <kbd>Enter</kbd>: Capturar e analisar ambiente agora.</li>
               <li><kbd>R</kbd>: Repetir voz do áudio.</li>
-              <li><kbd>V</kbd>: Ligar/Desligar escuta de voz contínua.</li>
+              <li><kbd>V</kbd>: Ligar/Desligar modo de voz contínuo.</li>
             </ul>
           </v-card-text>
 
-          <v-card-actions>
+          <v-card-actions class="pt-2">
             <v-spacer></v-spacer>
-            <v-btn color="primary" variant="flat" class="font-weight-bold px-6" @click="showHelpDialog = false">Entendi</v-btn>
+            <v-btn color="primary" variant="flat" class="font-weight-bold px-6 rounded-lg shadow-pastel-primary" size="large" @click="showHelpDialog = false">Entendi</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
