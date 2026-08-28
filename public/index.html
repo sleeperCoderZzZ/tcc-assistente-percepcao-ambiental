@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura Vue.js 3 com Vuetify 3, retenção zero de dados e acessibilidade total por voz.">
+  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura Vue.js 3 com Vuetify 3 local, retenção zero de dados e acessibilidade total por voz.">
   <meta name="theme-color" content="#E0F2FE">
   <title>Assistente de Percepção Ambiental — Retenção Zero</title>
 
@@ -12,11 +12,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Material Design Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+  <!-- Material Design Icons Locais -->
+  <link href="/vendor/mdi/css/materialdesignicons.min.css" rel="stylesheet">
 
-  <!-- Vuetify 3 CSS (CDN) -->
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@3.5.5/dist/vuetify.min.css" rel="stylesheet">
+  <!-- Vuetify 3 CSS Local -->
+  <link href="/vendor/vuetify/vuetify.min.css" rel="stylesheet">
 
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
@@ -48,53 +48,38 @@
         <v-spacer></v-spacer>
 
         <!-- Botões de Controle na Barra Superior -->
-        <v-tooltip text="Ativar/Desativar Comandos de Voz Contínuos (Atalho: V)" location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              v-bind="props"
-              :color="isVoiceListening ? 'emerald' : 'slate-400'"
-              :variant="isVoiceListening ? 'flat' : 'outlined'"
-              icon
-              class="mr-2"
-              @click="toggleVoiceListening"
-              aria-label="Alternar Escuta de Voz Contínua"
-            >
-              <v-icon :icon="isVoiceListening ? 'mdi-microphone' : 'mdi-microphone-off'"></v-icon>
-            </v-btn>
-          </template>
-        </v-tooltip>
+        <v-btn
+          :color="isVoiceListening ? 'emerald' : 'slate-400'"
+          :variant="isVoiceListening ? 'flat' : 'outlined'"
+          icon
+          class="mr-2"
+          @click="toggleVoiceListening"
+          aria-label="Alternar Escuta de Voz Contínua"
+        >
+          <v-icon :icon="isVoiceListening ? 'mdi-microphone' : 'mdi-microphone-off'"></v-icon>
+        </v-btn>
 
-        <v-tooltip text="Repetir Leitura de Áudio (Atalho: R)" location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              v-bind="props"
-              color="primary"
-              variant="tonal"
-              icon
-              class="mr-2"
-              @click="repeatAudio"
-              :disabled="!lastSpeechText"
-              aria-label="Repetir Leitura de Áudio"
-            >
-              <v-icon icon="mdi-volume-high"></v-icon>
-            </v-btn>
-          </template>
-        </v-tooltip>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          icon
+          class="mr-2"
+          @click="repeatAudio"
+          :disabled="!lastSpeechText"
+          aria-label="Repetir Leitura de Áudio"
+        >
+          <v-icon icon="mdi-volume-high"></v-icon>
+        </v-btn>
 
-        <v-tooltip text="Instruções de Acessibilidade e Voz" location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              v-bind="props"
-              color="secondary"
-              variant="tonal"
-              icon
-              @click="showHelpDialog = true"
-              aria-label="Abrir Ajuda e Atalhos"
-            >
-              <v-icon icon="mdi-help-circle-outline"></v-icon>
-            </v-btn>
-          </template>
-        </v-tooltip>
+        <v-btn
+          color="secondary"
+          variant="tonal"
+          icon
+          @click="showHelpDialog = true"
+          aria-label="Abrir Ajuda e Atalhos"
+        >
+          <v-icon icon="mdi-help-circle-outline"></v-icon>
+        </v-btn>
       </v-app-bar>
 
       <!-- Conteúdo Principal -->
@@ -111,7 +96,7 @@
             class="mb-4 text-body-2 font-weight-medium border-emerald"
           >
             <span class="font-weight-bold">Modo Mãos Livres Ativo:</span> Diga <em>"Capturar"</em>, <em>"O que tem na minha frente?"</em> ou <em>"Repetir"</em>.
-          </alert>
+          </v-alert>
 
           <!-- Alerta de Segurança e Perigo (Prioridade Máxima) -->
           <v-alert
@@ -176,7 +161,7 @@
                   aria-label="Capturar Foto e Analisar Ambiente (Atalho: Espaço ou Enter)"
                 >
                   <v-icon icon="mdi-camera-iris" size="large" class="mr-2"></v-icon>
-                  ANALSAR AGORA (ESPAÇO)
+                  ANALISAR AGORA (ESPAÇO)
                 </v-btn>
 
                 <!-- Input de Pergunta por Voz/Texto -->
@@ -308,7 +293,7 @@
                 </div>
               </v-card>
             </v-col>
-          </row>
+          </v-row>
         </v-container>
       </v-main>
 
@@ -347,9 +332,9 @@
     </v-app>
   </div>
 
-  <!-- Scripts CDN Vue 3 e Vuetify 3 -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.5/dist/vuetify.min.js"></script>
+  <!-- Scripts Locais Vue 3 e Vuetify 3 -->
+  <script src="/vendor/vue/vue.global.js"></script>
+  <script src="/vendor/vuetify/vuetify.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

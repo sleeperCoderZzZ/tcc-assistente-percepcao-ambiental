@@ -15,7 +15,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos do cliente PWA
+// Servir arquivos estáticos do cliente PWA e pacotes locais do Vue / Vuetify
+app.use('/vendor/vue', express.static(path.join(__dirname, '../node_modules/vue/dist')));
+app.use('/vendor/vuetify', express.static(path.join(__dirname, '../node_modules/vuetify/dist')));
+app.use('/vendor/mdi', express.static(path.join(__dirname, '../node_modules/@mdi/font')));
 app.use(express.static(path.join(__dirname, '../public')));
 
 /**

@@ -21,9 +21,12 @@
   "author": "Projeto TCC",
   "license": "MIT",
   "dependencies": {
+    "@mdi/font": "^7.4.47",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "vue": "^3.5.42",
+    "vuetify": "^4.1.12"
   }
 }
