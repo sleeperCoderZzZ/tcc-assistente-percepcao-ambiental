@@ -55,9 +55,12 @@ app.post('/api/perceive', memoryUpload.fields([
     let visualFeatures = null;
     if (req.body.visualFeatures) {
       try {
-        visualFeatures = typeof req.body.visualFeatures === 'string' 
+        const parsed = typeof req.body.visualFeatures === 'string' 
           ? JSON.parse(req.body.visualFeatures) 
           : req.body.visualFeatures;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          visualFeatures = parsed;
+        }
       } catch (e) {
         visualFeatures = null;
       }
@@ -65,6 +68,7 @@ app.post('/api/perceive', memoryUpload.fields([
 
     if (!imageFile && !audioFile && !userQuestion) {
       return res.status(400).json({
+        success: false,
         error: 'Requisição inválida. Envie pelo menos uma imagem ou pergunta de voz para percepção ambiental.'
       });
     }
@@ -92,12 +96,24 @@ app.post('/api/perceive', memoryUpload.fields([
   }
 });
 
-// Middleware de tratamento de erros do Multer / Upload
+// Middleware de tratamento de erros estruturado do Multer / Upload
 app.use((err, req, res, next) => {
   if (err) {
-    return res.status(400).json({
+    console.error('[ERRO MIDDLEWARE UPLOAD]:', err.message);
+    let statusCode = 400;
+    let errorMessage = err.message || 'Erro de validação no envio da mídia.';
+
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      statusCode = 413;
+      errorMessage = 'Tamanho do arquivo excede o limite máximo permitido de 10 MB.';
+    } else if (err.code === 'LIMIT_FILE_COUNT') {
+      statusCode = 400;
+      errorMessage = 'Número de arquivos enviados excede o limite permitido (máximo 2 mídias).';
+    }
+
+    return res.status(statusCode).json({
       success: false,
-      error: err.message || 'Erro de validação no envio da mídia.'
+      error: errorMessage
     });
   }
   next();

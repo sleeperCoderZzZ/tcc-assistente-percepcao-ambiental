@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const AIServiceFactory = require('../server/patterns/aiServiceFactory');
 const EphemeralMediaProcessor = require('../server/services/ephemeralProcessor');
 const VisualAnalysisAgent = require('../server/services/agents/visualAnalysisAgent');
+const BasePerceptionProvider = require('../server/services/providers/baseProvider');
 
 test('AIServiceFactory - deve instanciar MultiAgentHybridEnsembleProvider por padrão', () => {
   const provider = AIServiceFactory.createProvider('multi-agent');
@@ -13,6 +14,17 @@ test('AIServiceFactory - deve instanciar MultiAgentHybridEnsembleProvider por pa
 test('AIServiceFactory - deve instanciar GeminiPerceptionProvider quando solicitado', () => {
   const provider = AIServiceFactory.createProvider('gemini');
   assert.strictEqual(provider.name, 'GeminiPerceptionProvider');
+});
+
+test('AIServiceFactory - deve instanciar MockPerceptionProvider quando solicitado', () => {
+  const provider = AIServiceFactory.createProvider('mock');
+  assert.strictEqual(provider.name, 'MockPerceptionProvider');
+});
+
+test('BasePerceptionProvider - deve lançar erro se instanciado diretamente (classe abstrata)', () => {
+  assert.throws(() => {
+    new BasePerceptionProvider('AbstractTest');
+  }, TypeError);
 });
 
 test('VisualAnalysisAgent - deve extrair características visuais de fones, roupas e pessoas', () => {
@@ -45,8 +57,37 @@ test('EphemeralMediaProcessor - deve responder à pergunta "O que tem na minha f
     providerOverride: 'multi-agent'
   });
 
-  assert.strictEqual(result.priority, 'NORMAL'); // Deve ser NORMAL, sem caixa vermelha de alarme
+  assert.strictEqual(result.priority, 'NORMAL');
   assert.ok(result.speechText.includes('À sua frente'));
   assert.strictEqual(result.retentionPolicy.zeroDataRetention, true);
   assert.strictEqual(mockImageFile.buffer, null);
 });
+
+test('EphemeralMediaProcessor - GARANTIA ARQUITETURAL: deve limpar buffers da RAM mesmo se o provedor lançar erro', async () => {
+  const mockImageFile = {
+    buffer: Buffer.from('imagem_teste_erro'),
+    mimetype: 'image/jpeg'
+  };
+  const mockAudioFile = {
+    buffer: Buffer.from('audio_teste_erro'),
+    mimetype: 'audio/wav'
+  };
+
+  // Mock de provedor que falha intencionalmente
+  const failingProviderOverride = 'gemini';
+  // Sem GEMINI_API_KEY no ambiente para forçar erro
+
+  await assert.rejects(async () => {
+    await EphemeralMediaProcessor.processPerception({
+      imageFile: mockImageFile,
+      audioFile: mockAudioFile,
+      userQuestion: 'Pergunta com falha no provedor',
+      providerOverride: failingProviderOverride
+    });
+  });
+
+  // Validação estrita de retenção zero: buffers DEVEM ser nulos após o bloco finally
+  assert.strictEqual(mockImageFile.buffer, null);
+  assert.strictEqual(mockAudioFile.buffer, null);
+});
+

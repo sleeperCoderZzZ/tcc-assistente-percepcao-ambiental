@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura PWA com Retenção Zero de Dados.">
-  <meta name="theme-color" content="#070a12">
-  <title>Assistente de Percepção Ambiental (Retenção Zero)</title>
+  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura PWA ultra-moderna com Retenção Zero de Dados.">
+  <meta name="theme-color" content="#070a14">
+  <title>Assistente de Percepção Ambiental — Retenção Zero</title>
+  
+  <!-- Fontes de Alta Performance Google Fonts (Outfit & Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -19,15 +25,16 @@
 
   <div class="app-container">
     
-    <!-- Cabeçalho Principal -->
+    <!-- Cabeçalho Principal com Glassmorphism Ultra-Moderno -->
     <header class="app-header" role="banner">
       <div class="brand">
         <div class="hero-avatar-container">
-          <img src="hero_vision_assistant.jpg" alt="Ícone de Percepção Visual por IA" class="hero-avatar">
+          <img src="hero_vision_assistant.jpg" alt="Ícone de Percepção Visual por Inteligência Artificial" class="hero-avatar">
+          <div class="pulse-ring"></div>
         </div>
         <div>
           <h1>Percepção Ambiental <span class="badge-vlm">VLM AI</span></h1>
-          <p class="subtitle">Arquitetura Web de Retenção Zero de Dados</p>
+          <p class="subtitle">Arquitetura Web de Retenção Zero de Dados (TCC)</p>
         </div>
       </div>
 
@@ -43,7 +50,7 @@
         </div>
 
         <div class="header-badges">
-          <span class="badge badge-privacy" title="Processamento exclusivo em memória RAM">🔒 Retenção Zero</span>
+          <span class="badge badge-privacy" title="Processamento exclusivo em memória RAM volátil">🔒 Retenção Zero</span>
           <span class="badge badge-a11y" title="Conformidade WCAG 2.1 AAA">♿ WCAG 2.1 AAA</span>
         </div>
       </div>
@@ -82,10 +89,19 @@
         <div class="camera-preview-container">
           <video id="camera-feed" autoplay playsinline class="camera-feed" aria-label="Visualização em tempo real da câmera do ambiente"></video>
           
+          <!-- HUD Futuristic Visual Target Reticle -->
+          <div class="camera-hud-target" aria-hidden="true">
+            <div class="hud-corner top-left"></div>
+            <div class="hud-corner top-right"></div>
+            <div class="hud-corner bottom-left"></div>
+            <div class="hud-corner bottom-right"></div>
+            <div class="hud-crosshair"></div>
+          </div>
+
           <!-- Overlay Animado de Varredura da Câmera -->
           <div id="scan-overlay" class="scan-overlay hidden" aria-hidden="true">
             <div class="scan-line"></div>
-            <span class="scan-text">Processando detecção de humanos e ambiente em memória RAM...</span>
+            <span class="scan-text">Orquestrando Agentes de Percepção (Pixels + VLM) em RAM...</span>
           </div>
 
           <canvas id="capture-canvas" class="hidden"></canvas>
