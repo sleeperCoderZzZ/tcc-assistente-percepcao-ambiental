@@ -21,6 +21,11 @@ test('AIServiceFactory - deve instanciar MockPerceptionProvider quando solicitad
   assert.strictEqual(provider.name, 'MockPerceptionProvider');
 });
 
+test('AIServiceFactory - deve instanciar OpenAIPerceptionProvider quando solicitado', () => {
+  const provider = AIServiceFactory.createProvider('openai');
+  assert.strictEqual(provider.name, 'OpenAIPerceptionProvider');
+});
+
 test('BasePerceptionProvider - deve lançar erro se instanciado diretamente (classe abstrata)', () => {
   assert.throws(() => {
     new BasePerceptionProvider('AbstractTest');

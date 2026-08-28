@@ -97,5 +97,6 @@ Um assistente web multimodal que permite a uma pessoa com deficiência visual ca
 - Interface abstrata: `server/services/providers/baseProvider.js`
 - Provedor Mock: `server/services/providers/mockProvider.js`
 - Provedor Gemini: `server/services/providers/geminiProvider.js`
+- Provedor OpenAI GPT: `server/services/providers/openaiProvider.js`
 - Fábrica de serviços: `server/patterns/aiServiceFactory.js`
 - Documentação acadêmica completa (fundamentação teórica, cronograma, metodologia): `docs/TCC_PROPOSAL.md`

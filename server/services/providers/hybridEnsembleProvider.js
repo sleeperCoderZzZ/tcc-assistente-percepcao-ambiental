@@ -2,6 +2,7 @@ const BasePerceptionProvider = require('./baseProvider');
 const VisualAnalysisAgent = require('../agents/visualAnalysisAgent');
 const MockPerceptionProvider = require('./mockProvider');
 const GeminiPerceptionProvider = require('./geminiProvider');
+const OpenAIPerceptionProvider = require('./openaiProvider');
 
 /**
  * Provedor Multi-Agente Híbrido (Multi-Agent Perception Ensemble).
@@ -12,8 +13,14 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
   constructor(vlmType = 'auto') {
     super('MultiAgentHybridEnsembleProvider');
     
-    if (vlmType === 'gemini' || (process.env.GEMINI_API_KEY && vlmType !== 'mock')) {
+    const type = (vlmType || process.env.AI_PROVIDER || 'auto').toLowerCase();
+
+    if (type === 'openai' || type === 'gpt' || type === 'gpt-4o') {
+      this.vlmAgent = new OpenAIPerceptionProvider(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL);
+    } else if (type === 'gemini' || (process.env.GEMINI_API_KEY && type !== 'mock' && !process.env.OPENAI_API_KEY)) {
       this.vlmAgent = new GeminiPerceptionProvider(process.env.GEMINI_API_KEY);
+    } else if (process.env.OPENAI_API_KEY && type !== 'mock') {
+      this.vlmAgent = new OpenAIPerceptionProvider(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL);
     } else {
       this.vlmAgent = new MockPerceptionProvider();
     }
