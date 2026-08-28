@@ -191,6 +191,22 @@
         </details>
       </section>
 
+      <!-- SEÇÃO 4: Acurácia - Elementos e Objetos Identificados -->
+      <section id="section-detected-objects" class="card objects-card" aria-labelledby="objects-heading" data-tour-step="4">
+        <div class="card-header">
+          <h2 id="objects-heading" class="section-title">
+            <span class="step-badge">Acurácia</span> 🧩 Elementos e Objetos Identificados
+          </h2>
+          <span class="card-status-pill" id="objects-count-pill">0 elementos</span>
+        </div>
+        
+        <p class="input-hint">Catálogo de todos os elementos reconhecidos pelos Agentes de Percepção (Pixel Analytics + VLM):</p>
+        
+        <div id="detected-objects-container" class="detected-objects-container" role="region" aria-live="polite">
+          <span class="empty-objects-msg">Nenhuma análise realizada ainda. Clique em "Analisar Ambiente" para listar os objetos identificados.</span>
+        </div>
+      </section>
+
     </main>
 
     <!-- Modal do Guia Passo a Passo Interativo -->

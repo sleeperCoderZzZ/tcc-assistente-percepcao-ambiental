@@ -10,40 +10,34 @@ class MockPerceptionProvider extends BasePerceptionProvider {
     super('MockPerceptionProvider');
   }
 
-  async analyzePerception({ imageBuffer, imageMimeType, userQuestion }) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+  async analyzePerception({ imageBuffer, imageMimeType, userQuestion, visualFeatures }) {
+    await new Promise((resolve) => setTimeout(resolve, 80));
 
-    const bufferSizeKB = imageBuffer ? Math.round(imageBuffer.length / 1024) : 0;
+    const features = visualFeatures || {};
     const questionText = userQuestion ? userQuestion.toLowerCase() : '';
+    const hasHuman = Boolean(features.hasFaceCandidate || (features.skinRatio && features.skinRatio > 0.08));
+    const clothingColor = features.clothingColor || (features.dominantColors && features.dominantColors[0]) || null;
+    const hasHeadphones = Boolean(features.headphoneCandidate);
 
-    // Pergunta explícita sobre o que está à frente
-    const isGeneralQuestion = questionText.includes('frente') || 
-                               questionText.includes('o que') || 
-                               questionText.includes('ve') || 
-                               questionText.includes('olha') ||
-                               !userQuestion;
-
-    if (isGeneralQuestion) {
-      return {
-        priority: 'NORMAL',
-        humanDetected: true,
-        humanDetails: 'Uma pessoa física em pé, usando roupa azul e fones de ouvido.',
-        proximityEstimate: '0,7 metro (70 cm da câmera)',
-        hazards: [], // Sem perigos de emergência
-        description: `À sua frente há uma pessoa vestindo roupa azul e fones de ouvido, posicionada a aproximadamente 70 cm de distância. O ambiente está bem iluminado e sem obstáculos no chão.`,
-        speechText: `À sua frente há uma pessoa vestindo roupa azul e fones de ouvido, a cerca de 70 centímetros de distância. O caminho está seguro.`,
-        provider: this.name,
-        processedInMemoryOnly: true
-      };
+    const detectedObjects = [];
+    if (hasHuman) {
+      detectedObjects.push('Ser Humano / Pessoa');
+      if (clothingColor) detectedObjects.push(`Vestuário (${clothingColor})`);
+    } else {
+      detectedObjects.push('Caminho livre / Espaço aberto');
     }
+    if (hasHeadphones) detectedObjects.push('Fone de ouvido');
+    detectedObjects.push('Iluminação de ambiente');
 
-    // Caso pergunto especificamente por perigos/obstáculos perigosos
-    if (questionText.includes('perigo') || questionText.includes('degrau') || questionText.includes('buraco')) {
+    const isHazardQuestion = questionText.includes('perigo') || questionText.includes('degrau') || questionText.includes('buraco');
+
+    if (isHazardQuestion) {
       return {
         priority: 'HIGH',
         humanDetected: false,
         humanDetails: null,
         proximityEstimate: '1,2 metro',
+        detectedObjects: ['Degrau no piso', 'Superfície irregular'],
         hazards: ['Degrau de 15cm à frente.'],
         description: 'Atenção: Degrau de 15 centímetros identificado no piso a 1,2 metro.',
         speechText: 'Cuidado! Há um degrau no chão a um metro e vinte centímetros de distância.',
@@ -52,14 +46,30 @@ class MockPerceptionProvider extends BasePerceptionProvider {
       };
     }
 
+    if (hasHuman) {
+      return {
+        priority: 'NORMAL',
+        humanDetected: true,
+        humanDetails: `Pessoa identificada à frente${clothingColor ? ' vestindo ' + clothingColor : ''}.`,
+        proximityEstimate: '0,9 metro',
+        detectedObjects: detectedObjects,
+        hazards: [],
+        description: `À sua frente há uma pessoa identificada pela câmera${clothingColor ? ' vestindo roupa de tom ' + clothingColor : ''}${hasHeadphones ? ' com fone de ouvido' : ''}, a cerca de 90 cm de distância.`,
+        speechText: `À sua frente há uma pessoa a cerca de 90 centímetros de distância.`,
+        provider: this.name,
+        processedInMemoryOnly: true
+      };
+    }
+
     return {
       priority: 'NORMAL',
-      humanDetected: true,
-      humanDetails: 'Pessoa física identificada à frente.',
-      proximityEstimate: '0,8 metro',
+      humanDetected: false,
+      humanDetails: null,
+      proximityEstimate: 'Desobstruído',
+      detectedObjects: ['Ambiente interno', 'Chão nivelado', 'Iluminação adequada'],
       hazards: [],
-      description: `Resposta à pergunta "${userQuestion}": À sua frente há uma pessoa a cerca de 80 cm de distância.`,
-      speechText: `Respondendo à sua pergunta: à sua frente há uma pessoa posicionada a cerca de 80 centímetros.`,
+      description: `O ambiente à frente está livre de obstáculos imediatos. Nenhuma pessoa ou perigo detectado na área central.`,
+      speechText: `À sua frente o caminho está livre de obstáculos.`,
       provider: this.name,
       processedInMemoryOnly: true
     };

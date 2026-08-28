@@ -418,6 +418,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnVoiceInput.title = 'Reconhecimento de voz não suportado neste navegador.';
   }
 
+  const detectedObjectsContainer = document.getElementById('detected-objects-container');
+  const objectsCountPill = document.getElementById('objects-count-pill');
+
   /**
    * Fluxo de Análise Multi-Agente Efêmero no Middleware (Retenção Zero)
    */
@@ -463,13 +466,32 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeHumanStatus.textContent = '🧍 Pessoa Detectada: SIM';
         badgeHumanStatus.style.backgroundColor = 'var(--accent-purple)';
         badgeProximity.textContent = `📏 Proximidade: ${data.proximityEstimate || 'Aproximada'}`;
-        humanDetailsText.textContent = data.humanDetails || 'Ser humano identificado com elementos básicos (roupa, acessórios e silhueta).';
+        humanDetailsText.textContent = data.humanDetails || 'Ser humano identificado na imagem.';
       } else {
         humanDetectionBox.classList.remove('hidden');
         badgeHumanStatus.textContent = '👤 Pessoa Detectada: NÃO';
         badgeHumanStatus.style.backgroundColor = 'var(--bg-surface)';
         badgeProximity.textContent = `📏 Proximidade: ${data.proximityEstimate || 'Desobstruído'}`;
         humanDetailsText.textContent = 'Nenhuma pessoa identificada no caminho imediato.';
+      }
+
+      // Renderizar catálogo de objetos e elementos identificados (Acurácia)
+      if (detectedObjectsContainer && objectsCountPill) {
+        const objectsList = Array.isArray(data.detectedObjects) ? data.detectedObjects : [];
+        detectedObjectsContainer.innerHTML = '';
+
+        if (objectsList.length > 0) {
+          objectsCountPill.textContent = `${objectsList.length} elemento${objectsList.length > 1 ? 's' : ''}`;
+          objectsList.forEach(obj => {
+            const chip = document.createElement('div');
+            chip.className = 'object-chip';
+            chip.innerHTML = `<span class="chip-icon">🔍</span><span class="chip-text">${obj}</span>`;
+            detectedObjectsContainer.appendChild(chip);
+          });
+        } else {
+          objectsCountPill.textContent = '0 elementos';
+          detectedObjectsContainer.innerHTML = '<span class="empty-objects-msg">Nenhum objeto específico catalogado nesta varredura.</span>';
+        }
       }
 
       if (data.priority === 'HIGH' && data.hazards && data.hazards.length > 0) {

@@ -19,25 +19,26 @@ class GeminiPerceptionProvider extends BasePerceptionProvider {
     const mime = imageMimeType || 'image/jpeg';
     const base64Data = imageBuffer.toString('base64');
     const prompt = `Você é um assistente auditivo de percepção ambiental para pessoas com deficiência visual.
-Sua missão é RESPONDER DIRETA E NATURALMENTE À PERGUNTA FEITA PELO USUÁRIO com base na imagem recebida.
+Sua missão é ANALISAR A IMAGEM EM DETALHES, IDENTIFICAR TODOS OS OBJETOS E ELEMENTOS PRESENTES E RESPONDER DIRETA E NATURALMENTE À PERGUNTA FEITA PELO USUÁRIO.
 
 Pergunta do Usuário: "${userQuestion || 'O que tem na minha frente?'}"
 
-DIRETRIZES IMPORTANTES DE RESPOSTA (Siga estritamente para evitar alucinações):
-1. RESPOSTA DIRETA: Responda exatamente ao que foi perguntado, baseando-se apenas no que você REALMENTE VÊ. Se há uma pessoa na sua frente, diga isso (ex: "À sua frente há uma pessoa vestindo camisa azul com fone de ouvido, a cerca de 70 cm").
-2. FOCO NA PESSOA: Se você detectar partes de um corpo humano (rosto, peito, roupa, fones, braços), classifique "humanDetected": true. Não ignore a pessoa só porque ela está muito perto (close-up).
-3. PROIBIÇÃO DE ALUCINAÇÕES: NUNCA INVENTE que há "desníveis", "cadeiras", "corredores livres" ou "caminho livre" se você não estiver vendo isso claramente. Se a imagem mostra apenas a roupa/rosto de alguém muito perto, o ambiente está "obstruído" pela pessoa.
-4. ALERTAS DE EMERGÊNCIA (priority = HIGH): Apenas liste 'hazards' e use priority="HIGH" se houver um PERIGO FÍSICO REAL E IMINENTE de acidente grave (como um buraco enorme no chão ou um carro vindo na sua direção). Estar perto de uma pessoa, segurar um objeto ou estar de frente para uma parede NÃO é risco iminente de queda. Portanto, na dúvida, use priority="NORMAL" e deixe "hazards" vazio ([]).
+DIRETRIZES DE RESPOSTA E ANÁLISE DE IMAGEM:
+1. DETECÇÃO REAL DE OBJETOS: Identifique individualmente todos os objetos visíveis (ex: mesa, cadeira, garrafa, monitor, parede, porta, celular, pessoa, etc.) e inclua-os na lista 'detectedObjects'.
+2. VERACIDADE ABSOLUTA: Descreva APENAS o que você REALMENTE enxerga na imagem. NUNCA invente cores de roupa, fones de ouvido ou distâncias fixas se eles não existirem na foto.
+3. DETECÇÃO HUMANA: Defina "humanDetected": true SOMENTE se houver um ser humano visível na imagem. Se não houver pessoa, defina "humanDetected": false e "humanDetails": null.
+4. ALERTAS DE EMERGÊNCIA: Defina "priority": "HIGH" e liste 'hazards' APENAS se houver risco iminente de queda ou colisão física grave. Caso contrário, use "priority": "NORMAL" e "hazards": [].
 
 RETORNE ESTRITAMENTE O SEGUINTE JSON:
 {
-  "priority": "NORMAL", (ou "HIGH" SOMENTE em perigos iminentes e inquestionáveis de colisão/queda grave)
+  "priority": "NORMAL" ou "HIGH",
   "humanDetected": true ou false,
-  "humanDetails": "descrição da pessoa se encontrada, senão null",
-  "proximityEstimate": "distância estimada, ex: '0,5 metro'",
-  "hazards": ["lista de riscos graves reais. NUNCA invente itens. Deixe vazio [] se não houver"],
-  "description": "descrição realista e direta do que é visto, sem inventar cenários de fundo",
-  "speechText": "resposta natural para ser lida em voz alta ao usuário"
+  "humanDetails": "descrição resumida da pessoa se houver, senão null",
+  "proximityEstimate": "distância estimada até o elemento principal (ex: '1,5 metro' ou 'Desobstruído')",
+  "detectedObjects": ["lista", "de", "objetos", "e", "elementos", "visíveis"],
+  "hazards": ["perigos iminentes de colisão/queda ou []"],
+  "description": "descrição objetiva do que está presente na imagem",
+  "speechText": "resposta clara e natural para leitura em voz alta ao usuário"
 }`;
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
@@ -80,9 +81,10 @@ RETORNE ESTRITAMENTE O SEGUINTE JSON:
         priority: parsed.priority || 'NORMAL',
         humanDetected: parsed.humanDetected || false,
         humanDetails: parsed.humanDetails || null,
-        proximityEstimate: parsed.proximityEstimate || 'Aproximadamente 1 metro',
-        hazards: parsed.hazards || [],
-        description: parsed.description || 'Imagem analisada.',
+        proximityEstimate: parsed.proximityEstimate || 'Distância não especificada',
+        detectedObjects: Array.isArray(parsed.detectedObjects) ? parsed.detectedObjects : [],
+        hazards: Array.isArray(parsed.hazards) ? parsed.hazards : [],
+        description: parsed.description || 'Análise da imagem concluída.',
         speechText: parsed.speechText || parsed.description || 'Análise concluída.',
         provider: this.name,
         processedInMemoryOnly: true
@@ -93,6 +95,7 @@ RETORNE ESTRITAMENTE O SEGUINTE JSON:
         humanDetected: false,
         humanDetails: null,
         proximityEstimate: 'Não determinado',
+        detectedObjects: [],
         hazards: [],
         description: rawContent || 'Descrição gerada pelo modelo.',
         speechText: rawContent || 'Análise concluída.',

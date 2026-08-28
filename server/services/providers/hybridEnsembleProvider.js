@@ -32,7 +32,8 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
       vlmAnalysis = await this.vlmAgent.analyzePerception({
         imageBuffer,
         imageMimeType,
-        userQuestion: userQuestion || 'O que tem na minha frente?'
+        userQuestion: userQuestion || 'O que tem na minha frente?',
+        visualFeatures
       });
     } catch (err) {
       console.warn('[MULTI-AGENTE WARNING]: Falha no agente VLM remoto. Utilizando síntese local.', err.message);
@@ -40,12 +41,22 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
     }
 
     // 3. Agente 3: Síntese e Fusão
-    const humanDetected = pixelAnalysis.humanDetected || (vlmAnalysis ? vlmAnalysis.humanDetected : false);
+    const humanDetected = (vlmAnalysis && typeof vlmAnalysis.humanDetected === 'boolean') 
+      ? vlmAnalysis.humanDetected 
+      : pixelAnalysis.humanDetected;
+
     const hasHeadphones = pixelAnalysis.hasHeadphones;
     const clothingColor = pixelAnalysis.clothingColor;
-    const proximity = vlmAnalysis ? vlmAnalysis.proximityEstimate : '0,7 metro';
+    const proximity = vlmAnalysis ? vlmAnalysis.proximityEstimate : (humanDetected ? '0,9 metro' : 'Desobstruído');
 
-    // Determinar se há perigo real de emergência (degraus, buracos, colisões iminentes)
+    // Combinar e desduplicar a lista de objetos detectados pelos agentes
+    const rawObjects = [
+      ...(pixelAnalysis.detectedObjects || []),
+      ...(vlmAnalysis && Array.isArray(vlmAnalysis.detectedObjects) ? vlmAnalysis.detectedObjects : [])
+    ];
+    const detectedObjects = Array.from(new Set(rawObjects.filter(Boolean)));
+
+    // Determinar se há perigo real de emergência
     const realHazards = (vlmAnalysis && vlmAnalysis.hazards) ? vlmAnalysis.hazards : [];
     const isEmergency = realHazards.length > 0 && vlmAnalysis.priority === 'HIGH';
 
@@ -54,21 +65,21 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
     if (vlmAnalysis && vlmAnalysis.speechText) {
       speechText = vlmAnalysis.speechText;
     } else if (humanDetected) {
-      speechText = `À sua frente há uma pessoa vestindo roupa de cor ${clothingColor}${hasHeadphones ? ' e usando fones de ouvido' : ''}, a aproximadamente ${proximity} de distância.`;
+      speechText = `À sua frente há uma pessoa identificada${clothingColor && clothingColor !== 'não identificado' ? ' vestindo tom ' + clothingColor : ''}, a aproximadamente ${proximity} de distância.`;
     } else {
-      speechText = `À sua frente o caminho está livre e desobstruído. Nenhuma pessoa ou obstáculo detectado a menos de 2 metros.`;
+      speechText = `À sua frente o caminho está livre e desobstruído. Nenhuma pessoa ou obstáculo imediato detectado.`;
     }
 
     const descriptionText = vlmAnalysis && vlmAnalysis.description 
       ? vlmAnalysis.description 
-      : `Análise do ambiente: À sua frente há uma pessoa (proximidade ${proximity}) vestindo roupa ${clothingColor}${hasHeadphones ? ' com fone de ouvido' : ''}.`;
+      : `Análise do ambiente: ${humanDetected ? 'Pessoa identificada à frente (' + proximity + ').' : 'Ambiente livre.'}`;
 
     return {
       priority: isEmergency ? 'HIGH' : 'NORMAL',
       humanDetected: humanDetected,
-      humanDetails: humanDetected ? `Pessoa a ${proximity}. Roupa: ${clothingColor}. Fone: ${hasHeadphones ? 'Sim' : 'Não'}.` : 'Nenhuma pessoa próxima.',
+      humanDetails: humanDetected ? `Pessoa a ${proximity}.` : 'Nenhuma pessoa próxima.',
       proximityEstimate: proximity,
-      detectedObjects: pixelAnalysis.detectedObjects,
+      detectedObjects: detectedObjects,
       hazards: realHazards,
       description: descriptionText,
       speechText: speechText,

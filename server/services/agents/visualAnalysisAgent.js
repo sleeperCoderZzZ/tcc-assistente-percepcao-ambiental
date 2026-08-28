@@ -15,34 +15,46 @@ class VisualAnalysisAgent {
   static analyzeImageFeatures({ visualFeatures, imageBuffer }) {
     // Se o cliente PWA enviou métricas visuais reais extraídas dos pixels da câmera:
     const features = visualFeatures || {};
-    const skinRatio = features.skinRatio || 0.15;
-    const edgeDensity = features.edgeDensity || 0.25;
-    const dominantColors = features.dominantColors || ['azul escuro', 'cinza'];
-    const brightness = features.brightness || 128;
+    const skinRatio = typeof features.skinRatio === 'number' ? features.skinRatio : 0;
+    const edgeDensity = typeof features.edgeDensity === 'number' ? features.edgeDensity : 0;
+    const dominantColors = Array.isArray(features.dominantColors) ? features.dominantColors : [];
+    const brightness = typeof features.brightness === 'number' ? features.brightness : 128;
 
-    // Detecção de Ser Humano baseada na proporção de pixels de tom de pele e densidade de silhueta
-    const hasHuman = skinRatio > 0.05 || features.hasFaceCandidate || true; // Sensibilidade alta
+    // Detecção dinâmica de Ser Humano baseada na proporção real de pixels de tom de pele e silhueta
+    const hasHuman = Boolean(features.hasFaceCandidate || skinRatio > 0.08);
 
-    // Detecção de Acessórios (Fones de ouvido, óculos) por densidade de bordas e contraste no topo
-    const hasHeadphones = edgeDensity > 0.18 || features.headphoneCandidate;
-    const hasGlasses = features.glassesCandidate || false;
+    // Detecção de Acessórios (Fones de ouvido, óculos)
+    const hasHeadphones = Boolean(features.headphoneCandidate && skinRatio > 0.05);
+    const hasGlasses = Boolean(features.glassesCandidate);
 
-    // Análise de Vestuário pelas cores dominantes no centro da imagem
-    const clothingColor = dominantColors[0] || 'escuro';
+    // Análise de Vestuário pelas cores dominantes reais extraídas
+    const clothingColor = dominantColors[0] || null;
+
+    const detectedObjects = [];
+    if (hasHuman) {
+      detectedObjects.push('Ser Humano / Pessoa');
+      if (clothingColor) {
+        detectedObjects.push(`Vestuário (Tom ${clothingColor})`);
+      }
+    }
+    if (hasHeadphones) {
+      detectedObjects.push('Fone de ouvido (Headphones)');
+    }
+    if (hasGlasses) {
+      detectedObjects.push('Óculos');
+    }
+
+    const lightingLevel = brightness > 180 ? 'Muito iluminado' : brightness > 80 ? 'Iluminação adequada' : 'Ambiente escuro';
+    detectedObjects.push(`Iluminação: ${lightingLevel}`);
 
     return {
       humanDetected: hasHuman,
       skinRatioPercent: Math.round(skinRatio * 100),
-      detectedObjects: [
-        ...(hasHuman ? ['Pessoa / Ser humano'] : []),
-        ...(hasHeadphones ? ['Fone de ouvido (Headphones)'] : []),
-        ...(hasGlasses ? ['Óculos'] : []),
-        `Vestuário de cor ${clothingColor}`
-      ],
-      clothingColor: clothingColor,
+      detectedObjects: detectedObjects,
+      clothingColor: clothingColor || 'não identificado',
       hasHeadphones: hasHeadphones,
-      lightingLevel: brightness > 180 ? 'Muito iluminado' : brightness > 80 ? 'Iluminação adequada' : 'Ambiente escuro',
-      confidence: 0.92
+      lightingLevel: lightingLevel,
+      confidence: hasHuman ? 0.88 : 0.95
     };
   }
 }
