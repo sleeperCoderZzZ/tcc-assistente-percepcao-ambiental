@@ -33,7 +33,7 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
       imageBuffer
     });
 
-    // 2. Agente 2: Inferência VLM
+    // 2. Agente 2: Inferência VLM (com Fallback Inter-Provedor se necessário)
     let vlmAnalysis;
     try {
       vlmAnalysis = await this.vlmAgent.analyzePerception({
@@ -43,8 +43,26 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
         visualFeatures
       });
     } catch (err) {
-      console.warn('[MULTI-AGENTE WARNING]: Falha no agente VLM remoto. Utilizando síntese local.', err.message);
-      vlmAnalysis = null;
+      console.warn('[MULTI-AGENTE WARNING]: Falha no agente VLM primário. Tentando provedor secundário de contingência...', err.message);
+      
+      // Tentativa de fallback inter-provedor se tivermos chave da OpenAI e o primário não for OpenAI
+      if (process.env.OPENAI_API_KEY && this.vlmAgent.name !== 'OpenAIPerceptionProvider') {
+        try {
+          const fallbackProvider = new OpenAIPerceptionProvider(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL);
+          vlmAnalysis = await fallbackProvider.analyzePerception({
+            imageBuffer,
+            imageMimeType,
+            userQuestion: userQuestion || 'O que tem na minha frente?',
+            visualFeatures
+          });
+          console.info('[MULTI-AGENTE INFO]: Fallback para OpenAI GPT-4o concluído com sucesso.');
+        } catch (fallbackErr) {
+          console.error('[MULTI-AGENTE ERROR]: Falha também no provedor secundário OpenAI.', fallbackErr.message);
+          vlmAnalysis = null;
+        }
+      } else {
+        vlmAnalysis = null;
+      }
     }
 
     // 3. Agente 3: Síntese e Fusão

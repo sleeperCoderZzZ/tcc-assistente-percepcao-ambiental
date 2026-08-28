@@ -14,6 +14,7 @@ test('AIServiceFactory - deve instanciar MultiAgentHybridEnsembleProvider por pa
 test('AIServiceFactory - deve instanciar GeminiPerceptionProvider quando solicitado', () => {
   const provider = AIServiceFactory.createProvider('gemini');
   assert.strictEqual(provider.name, 'GeminiPerceptionProvider');
+  assert.ok(provider.preferredModel);
 });
 
 test('AIServiceFactory - deve instanciar MockPerceptionProvider quando solicitado', () => {
