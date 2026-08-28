@@ -3,241 +3,353 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura PWA ultra-moderna com Retenção Zero de Dados.">
-  <meta name="theme-color" content="#070a14">
+  <meta name="description" content="Assistente de Percepção Ambiental para pessoas com deficiência visual. Arquitetura Vue.js 3 com Vuetify 3, retenção zero de dados e acessibilidade total por voz.">
+  <meta name="theme-color" content="#E0F2FE">
   <title>Assistente de Percepção Ambiental — Retenção Zero</title>
-  
-  <!-- Fontes de Alta Performance Google Fonts (Outfit & Inter) -->
+
+  <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-  
+
+  <!-- Material Design Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+
+  <!-- Vuetify 3 CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@3.5.5/dist/vuetify.min.css" rel="stylesheet">
+
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <!-- Atalho de acessibilidade para saltar navegação -->
-  <a href="#main-content" class="skip-link" data-audio-label="Atalho: Pular para o conteúdo principal">Pular para o conteúdo principal</a>
+  <!-- Atalho de acessibilidade -->
+  <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
 
-  <!-- Destaque / Spotlight para o Guia Passo a Passo -->
-  <div id="tour-spotlight" class="tour-spotlight hidden" aria-hidden="true"></div>
+  <!-- Regiões ARIA Live para Leitores de Tela -->
+  <div id="aria-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+  <div id="aria-polite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <div class="app-container">
-    
-    <!-- Cabeçalho Principal com Glassmorphism Ultra-Moderno -->
-    <header class="app-header" role="banner">
-      <div class="brand">
-        <div class="hero-avatar-container">
-          <img src="hero_vision_assistant.jpg" alt="Ícone de Percepção Visual por Inteligência Artificial" class="hero-avatar">
-          <div class="pulse-ring"></div>
-        </div>
+  <div id="app">
+    <v-app class="pastel-theme">
+      <!-- App Bar Clean Pastel -->
+      <v-app-bar flat color="surface-variant" class="border-b px-2" role="banner">
+        <v-avatar color="primary" class="mr-3" size="44">
+          <v-icon icon="mdi-eye-outline" color="white"></v-icon>
+        </v-avatar>
+
         <div>
-          <h1>Percepção Ambiental <span class="badge-vlm">VLM AI</span></h1>
-          <p class="subtitle">Arquitetura Web de Retenção Zero de Dados (TCC)</p>
-        </div>
-      </div>
-
-      <div class="header-controls">
-        <div class="header-buttons-row">
-          <button id="btn-toggle-audio" class="btn btn-audio-toggle active" aria-label="Alternar retorno de áudio de navegação. Status atual: Ativado" data-audio-label="Botão Sons de Navegação Ativados">
-            <span aria-hidden="true">🔊</span> Som de Navegação: ON
-          </button>
-
-          <button id="btn-open-tour" class="btn btn-tour" aria-label="Abrir modo Guia e Instruções Passo a Passo na Tela (Atalho Alt mais G)" data-audio-label="Botão Abrir Guia Passo a Passo">
-            <span aria-hidden="true">📖</span> Guia Passo a Passo
-          </button>
+          <v-app-bar-title class="font-weight-bold text-h6 text-slate-800">
+            Percepção Ambiental <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold ml-1">VLM AI</v-chip>
+          </v-app-bar-title>
+          <div class="text-caption text-medium-emphasis">Arquitetura de Retenção Zero de Dados (TCC)</div>
         </div>
 
-        <div class="header-badges">
-          <span class="badge badge-privacy" title="Processamento exclusivo em memória RAM volátil">🔒 Retenção Zero</span>
-          <span class="badge badge-a11y" title="Conformidade WCAG 2.1 AAA">♿ WCAG 2.1 AAA</span>
-        </div>
-      </div>
-    </header>
+        <v-spacer></v-spacer>
 
-    <!-- Barra de Atalhos de Teclado Rápido -->
-    <nav class="shortcuts-bar" aria-label="Atalhos de teclado rápidos">
-      <span class="shortcuts-title">⌨️ Atalhos Rápidos:</span>
-      <kbd>Alt + G</kbd> Guia Passo a Passo
-      <kbd>Alt + A</kbd> Analisar Ambiente
-      <kbd>Alt + P</kbd> Detectar Pessoas
-      <kbd>Alt + R</kbd> Repetir Áudio
-    </nav>
+        <!-- Botões de Controle na Barra Superior -->
+        <v-tooltip text="Ativar/Desativar Comandos de Voz Contínuos (Atalho: V)" location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :color="isVoiceListening ? 'emerald' : 'slate-400'"
+              :variant="isVoiceListening ? 'flat' : 'outlined'"
+              icon
+              class="mr-2"
+              @click="toggleVoiceListening"
+              aria-label="Alternar Escuta de Voz Contínua"
+            >
+              <v-icon :icon="isVoiceListening ? 'mdi-microphone' : 'mdi-microphone-off'"></v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
 
-    <main id="main-content" class="app-main" tabindex="-1">
-      
-      <!-- Regiões ARIA Live para Anúncios de Leitores de Tela -->
-      <div id="aria-assertive-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
-      <div id="aria-polite-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+        <v-tooltip text="Repetir Leitura de Áudio (Atalho: R)" location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              color="primary"
+              variant="tonal"
+              icon
+              class="mr-2"
+              @click="repeatAudio"
+              :disabled="!lastSpeechText"
+              aria-label="Repetir Leitura de Áudio"
+            >
+              <v-icon icon="mdi-volume-high"></v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
 
-      <!-- Seção de Alertas Físicos e Perigos (Prioridade Máxima) -->
-      <section id="hazard-alert-box" class="hazard-alert-box hidden" aria-labelledby="hazard-heading">
-        <h2 id="hazard-heading" class="hazard-heading">⚠️ ALERTA DE SEGURANÇA NO AMBIENTE</h2>
-        <ul id="hazard-list" class="hazard-list"></ul>
-      </section>
+        <v-tooltip text="Instruções de Acessibilidade e Voz" location="bottom">
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              color="secondary"
+              variant="tonal"
+              icon
+              @click="showHelpDialog = true"
+              aria-label="Abrir Ajuda e Atalhos"
+            >
+              <v-icon icon="mdi-help-circle-outline"></v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+      </v-app-bar>
 
-      <!-- SEÇÃO 1: Câmera e Captura -->
-      <section id="section-capture" class="card capture-card" aria-labelledby="capture-heading" data-tour-step="1">
-        <div class="card-header">
-          <h2 id="capture-heading" class="section-title">
-            <span class="step-badge">Passo 1</span> 📷 Captura da Câmera
-          </h2>
-          <span class="card-status-pill" id="camera-status-pill">● Câmera Ativa</span>
-        </div>
-        
-        <div class="camera-preview-container">
-          <video id="camera-feed" autoplay playsinline class="camera-feed" aria-label="Visualização em tempo real da câmera do ambiente"></video>
+      <!-- Conteúdo Principal -->
+      <v-main id="main-content" class="bg-pastel-slate py-6 px-4" tabindex="-1">
+        <v-container class="max-width-lg">
           
-          <!-- HUD Futuristic Visual Target Reticle -->
-          <div class="camera-hud-target" aria-hidden="true">
-            <div class="hud-corner top-left"></div>
-            <div class="hud-corner top-right"></div>
-            <div class="hud-corner bottom-left"></div>
-            <div class="hud-corner bottom-right"></div>
-            <div class="hud-crosshair"></div>
-          </div>
+          <!-- Banner de Status do Modo Mãos Livres -->
+          <v-alert
+            v-if="isVoiceListening"
+            type="success"
+            variant="tonal"
+            density="compact"
+            icon="mdi-record-rec"
+            class="mb-4 text-body-2 font-weight-medium border-emerald"
+          >
+            <span class="font-weight-bold">Modo Mãos Livres Ativo:</span> Diga <em>"Capturar"</em>, <em>"O que tem na minha frente?"</em> ou <em>"Repetir"</em>.
+          </alert>
 
-          <!-- Overlay Animado de Varredura da Câmera -->
-          <div id="scan-overlay" class="scan-overlay hidden" aria-hidden="true">
-            <div class="scan-line"></div>
-            <span class="scan-text">Orquestrando Agentes de Percepção (Pixels + VLM) em RAM...</span>
-          </div>
+          <!-- Alerta de Segurança e Perigo (Prioridade Máxima) -->
+          <v-alert
+            v-if="latestAnalysis && latestAnalysis.hazards && latestAnalysis.hazards.length > 0"
+            type="error"
+            variant="flat"
+            icon="mdi-alert-octagon"
+            class="mb-6 rounded-lg shadow-sm"
+            role="alert"
+          >
+            <div class="text-h6 font-weight-bold mb-1">⚠️ ALERTA DE PERIGO NO AMBIENTE</div>
+            <ul class="pl-4">
+              <li v-for="(hazard, idx) in latestAnalysis.hazards" :key="idx" class="text-subtitle-1 font-weight-bold">
+                {{ hazard }}
+              </li>
+            </ul>
+          </v-alert>
 
-          <canvas id="capture-canvas" class="hidden"></canvas>
-          
-          <div id="image-placeholder" class="image-placeholder hidden">
-            <span class="placeholder-icon" aria-hidden="true">📷</span>
-            <span>Câmera desligada. Clique em "Alternar Câmera" para reativar.</span>
-          </div>
-        </div>
+          <v-row>
+            <!-- COLUNA ESQUERDA: Câmera & Captura -->
+            <v-col cols="12" md="6">
+              <v-card class="rounded-xl shadow-soft border-pastel overflow-hidden pa-4">
+                <div class="d-flex align-center justify-space-between mb-3">
+                  <div class="d-flex align-center">
+                    <v-icon color="primary" class="mr-2">mdi-camera</v-icon>
+                    <span class="text-h6 font-weight-bold text-slate-800">Visualização da Câmera</span>
+                  </div>
+                  <v-chip
+                    :color="isCameraActive ? 'emerald' : 'grey-lighten-1'"
+                    size="small"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    {{ isCameraActive ? '● Câmera Ativa' : 'Desativada' }}
+                  </v-chip>
+                </div>
 
-        <div class="action-bar">
-          <button id="btn-toggle-camera" class="btn btn-secondary" aria-label="Ligar ou desligar a câmera do dispositivo" data-audio-label="Botão Alternar Câmera do Dispositivo">
-            <span aria-hidden="true">🎥</span> Alternar Câmera
-          </button>
+                <!-- Feed da Câmera em Tempo Real -->
+                <div class="camera-wrapper rounded-lg relative overflow-hidden bg-slate-900 mb-4">
+                  <video
+                    ref="videoRef"
+                    autoplay
+                    playsinline
+                    class="camera-feed"
+                    aria-label="Feed de vídeo em tempo real da câmera"
+                  ></video>
+                  <canvas ref="canvasRef" class="d-none"></canvas>
 
-          <button id="btn-detect-person" class="btn btn-outline" aria-label="Detectar se há pessoas à frente (Atalho Alt mais P)" data-audio-label="Botão Detectar Pessoas à Frente">
-            <span aria-hidden="true">👤</span> Detectar Pessoas
-          </button>
+                  <!-- Scanner HUD visual -->
+                  <div v-if="isProcessing" class="scan-line-overlay"></div>
+                </div>
 
-          <button id="btn-capture" class="btn btn-primary btn-large" aria-label="Analisar ambiente agora (Atalho Alt mais A)" data-audio-label="Botão Analisar Ambiente Agora">
-            <span aria-hidden="true">⚡</span> Analisar Ambiente Agora
-          </button>
-        </div>
-      </section>
+                <!-- ZONA GIGANTE DE TOCAR / CAPTURAR (Tactile-First) -->
+                <v-btn
+                  block
+                  size="x-large"
+                  color="primary"
+                  variant="flat"
+                  class="text-h6 font-weight-bold py-6 rounded-xl shadow-pastel border-primary"
+                  :loading="isProcessing"
+                  @click="captureAndAnalyze()"
+                  aria-label="Capturar Foto e Analisar Ambiente (Atalho: Espaço ou Enter)"
+                >
+                  <v-icon icon="mdi-camera-iris" size="large" class="mr-2"></v-icon>
+                  ANALSAR AGORA (ESPAÇO)
+                </v-btn>
 
-      <!-- SEÇÃO 2: Pergunta por Voz ou Texto -->
-      <section id="section-question" class="card voice-card" aria-labelledby="voice-heading" data-tour-step="2">
-        <h2 id="voice-heading" class="section-title">
-          <span class="step-badge">Passo 2</span> 🎙️ Pergunta por Voz ou Texto
-        </h2>
-        
-        <div class="input-group">
-          <label for="input-question" class="input-label">Qual a sua dúvida sobre o ambiente à sua frente?</label>
-          <div class="input-with-button">
-            <input type="text" id="input-question" class="text-input" placeholder="Ex: Tem alguma pessoa à minha frente? A que distância?" aria-describedby="question-hint" data-audio-label="Campo de texto: Digite sua dúvida sobre o ambiente">
-            <button id="btn-voice-input" class="btn btn-icon btn-mic" aria-label="Ativar microfone para falar pergunta por voz" data-audio-label="Botão Microfone para Pergunta por Voz">
-              <span aria-hidden="true">🎙️</span>
-            </button>
-            <button id="btn-submit-question" class="btn btn-icon btn-primary" aria-label="Enviar pergunta" data-audio-label="Botão Enviar Pergunta">
-              <span aria-hidden="true">➡️</span>
-            </button>
-          </div>
-          <span id="question-hint" class="input-hint">Dica: Pergunte se há pessoas, obstáculos, degraus ou portas no seu caminho.</span>
-        </div>
-      </section>
+                <!-- Input de Pergunta por Voz/Texto -->
+                <div class="mt-4">
+                  <v-text-field
+                    v-model="userQuestion"
+                    label="Pergunta Específica (Opcional)"
+                    placeholder="Ex: Qual a cor da camiseta? O que tem na mesa?"
+                    variant="outlined"
+                    density="comfortable"
+                    color="primary"
+                    clearable
+                    hide-details
+                    append-inner-icon="mdi-send-circle"
+                    @click:append-inner="captureAndAnalyze()"
+                    @keyup.enter="captureAndAnalyze()"
+                  ></v-text-field>
+                </div>
+              </v-card>
+            </v-col>
 
-      <!-- SEÇÃO 3: Descrição e Retorno Auditivo com Detecção Humana -->
-      <section id="section-result" class="card result-card" aria-labelledby="result-heading" data-tour-step="3">
-        <div class="result-header">
-          <h2 id="result-heading" class="section-title">
-            <span class="step-badge">Passo 3</span> 🔊 Percepção e Retorno Auditivo
-          </h2>
-          <button id="btn-speak-again" class="btn btn-outline" aria-label="Ouvir novamente a descrição em voz alta (Atalho Alt mais R)" data-audio-label="Botão Ouvir Descrição Novamente" disabled>
-            <span aria-hidden="true">🔊</span> Ouvir Novamente
-          </button>
-        </div>
+            <!-- COLUNA DIREITA: Resultados da Percepção & Profundidade -->
+            <v-col cols="12" md="6">
+              <v-card class="rounded-xl shadow-soft border-pastel pa-4 h-100 d-flex flex-column">
+                <div class="d-flex align-center justify-space-between mb-3">
+                  <div class="d-flex align-center">
+                    <v-icon color="secondary" class="mr-2">mdi-text-to-speech</v-icon>
+                    <span class="text-h6 font-weight-bold text-slate-800">Resultado da Percepção</span>
+                  </div>
 
-        <!-- Painel de Detecção Humana e Proximidade -->
-        <div id="human-detection-box" class="human-detection-box hidden">
-          <div class="human-badge-row">
-            <span id="badge-human-status" class="human-status-tag">🧍 Pessoa Detectada: SIM</span>
-            <span id="badge-proximity" class="proximity-tag">📏 Proximidade: 0,7 m</span>
-          </div>
-          <p id="human-details-text" class="human-details-text"></p>
-        </div>
+                  <v-chip
+                    v-if="latestAnalysis"
+                    :color="latestAnalysis.priority === 'HIGH' ? 'error' : 'secondary'"
+                    size="small"
+                    variant="flat"
+                    class="font-weight-bold"
+                  >
+                    {{ latestAnalysis.priority === 'HIGH' ? 'Prioridade Alta' : 'Normal' }}
+                  </v-chip>
+                </div>
 
-        <div id="status-indicator" class="status-indicator" role="status">
-          <span class="status-dot"></span>
-          <span id="status-text">Aguardando análise do ambiente...</span>
-        </div>
+                <!-- Conteúdo da Leitura / Resposta da IA -->
+                <div class="flex-grow-1 bg-pastel-mint rounded-lg pa-4 mb-4 border-mint">
+                  <div v-if="isProcessing" class="text-center py-8">
+                    <v-progress-circular indeterminate color="primary" size="48" width="5" class="mb-3"></v-progress-circular>
+                    <div class="text-subtitle-1 font-weight-bold text-slate-700">Analisando imagem em memória RAM...</div>
+                    <div class="text-caption text-slate-500">Nenhum dado é salvo em disco (Retenção Zero).</div>
+                  </div>
 
-        <div class="description-output-box">
-          <p id="description-text" class="description-text">
-            Clique no botão "Analisar Ambiente Agora" para capturar a imagem e receber a narração sonora em tempo real.
-          </p>
-        </div>
+                  <div v-else-if="latestAnalysis">
+                    <div class="text-h6 font-weight-bold text-slate-800 mb-2">
+                      💬 Resposta Falada:
+                    </div>
+                    <p class="text-body-1 font-weight-medium text-slate-700 leading-relaxed mb-4">
+                      "{{ latestAnalysis.speechText }}"
+                    </p>
 
-        <!-- Painel de Retenção Zero de Dados -->
-        <details class="tech-details" data-audio-label="Painel de Detalhes Técnicos de Retenção Zero">
-          <summary class="tech-summary">🔒 Detalhes da Arquitetura de Retenção Zero de Dados</summary>
-          <div class="tech-content">
-            <p><strong>Garantia de Privacidade:</strong> Retenção Zero (RAM Volátil Apenas)</p>
-            <p><strong>Persistência no Disco:</strong> Nenhuma. Os dados são limpos imediatamente após a inferência.</p>
-            <p><strong>Provedor de IA (Factory Pattern):</strong> <span id="info-provider">Mock / Gemini</span></p>
-            <p><strong>Recursos VLM:</strong> Detecção Humana + Estimativa de Proximidade Espacial em Metros</p>
-          </div>
-        </details>
-      </section>
+                    <!-- Detalhes de Profundidade e Distância Exata -->
+                    <v-divider class="my-3"></v-divider>
 
-      <!-- SEÇÃO 4: Acurácia - Elementos e Objetos Identificados -->
-      <section id="section-detected-objects" class="card objects-card" aria-labelledby="objects-heading" data-tour-step="4">
-        <div class="card-header">
-          <h2 id="objects-heading" class="section-title">
-            <span class="step-badge">Acurácia</span> 🧩 Elementos e Objetos Identificados
-          </h2>
-          <span class="card-status-pill" id="objects-count-pill">0 elementos</span>
-        </div>
-        
-        <p class="input-hint">Catálogo de todos os elementos reconhecidos pelos Agentes de Percepção (Pixel Analytics + VLM):</p>
-        
-        <div id="detected-objects-container" class="detected-objects-container" role="region" aria-live="polite">
-          <span class="empty-objects-msg">Nenhuma análise realizada ainda. Clique em "Analisar Ambiente" para listar os objetos identificados.</span>
-        </div>
-      </section>
+                    <div class="d-flex align-center flex-wrap gap-2 mb-3">
+                      <v-chip color="info" size="medium" variant="tonal" class="font-weight-bold">
+                        <v-icon start icon="mdi-ruler"></v-icon>
+                        Profundidade: {{ latestAnalysis.proximityEstimate || 'Aproximada' }}
+                      </v-chip>
 
-    </main>
+                      <v-chip v-if="latestAnalysis.humanDetected" color="accent" size="medium" variant="tonal" class="font-weight-bold">
+                        <v-icon start icon="mdi-account"></v-icon>
+                        Pessoa Detectada
+                      </v-chip>
 
-    <!-- Modal do Guia Passo a Passo Interativo -->
-    <div id="tour-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tour-step-title">
-      <div class="modal-card">
-        <div class="modal-header">
-          <span id="tour-step-badge" class="tour-step-indicator">Passo 1 de 5</span>
-          <h2 id="tour-step-title" class="modal-title">Guia de Uso Passo a Passo</h2>
-          <button id="btn-close-tour" class="btn-close" aria-label="Fechar guia passo a passo" data-audio-label="Botão Fechar Guia Passo a Passo">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-          <div class="tour-icon-box" id="tour-icon-box" aria-hidden="true">💡</div>
-          <p id="tour-step-text" class="tour-description-text">
-            Instrução do passo aqui...
-          </p>
-        </div>
+                      <v-chip v-else color="grey" size="medium" variant="tonal" class="font-weight-bold">
+                        <v-icon start icon="mdi-account-off"></v-icon>
+                        Sem Pessoas
+                      </v-chip>
+                    </div>
 
-        <div class="modal-footer">
-          <button id="btn-tour-prev" class="btn btn-secondary" aria-label="Voltar para o passo anterior do guia" data-audio-label="Botão Passo Anterior do Guia">&larr; Anterior</button>
-          <button id="btn-tour-speak" class="btn btn-outline" aria-label="Ouvir instrução deste passo novamente" data-audio-label="Botão Ouvir Instrução Novamente">🔊 Ouvir Instrução</button>
-          <button id="btn-tour-next" class="btn btn-primary" aria-label="Avançar para o próximo passo do guia" data-audio-label="Botão Próximo Passo do Guia">Próximo &rarr;</button>
-        </div>
-      </div>
-    </div>
+                    <!-- Lista de Objetos Detectados -->
+                    <div v-if="latestAnalysis.detectedObjects && latestAnalysis.detectedObjects.length > 0">
+                      <div class="text-subtitle-2 font-weight-bold text-slate-600 mb-1">
+                        📦 Elementos Visíveis Identificados:
+                      </div>
+                      <div class="d-flex flex-wrap gap-1">
+                        <v-chip
+                          v-for="(obj, idx) in latestAnalysis.detectedObjects"
+                          :key="idx"
+                          size="small"
+                          color="slate-600"
+                          variant="outlined"
+                          class="font-weight-medium"
+                        >
+                          {{ obj }}
+                        </v-chip>
+                      </div>
+                    </div>
+                  </div>
 
-    <footer class="app-footer" role="contentinfo">
-      <p>Trabalho de Conclusão de Curso (TCC) • Assistente de Percepção Ambiental orientada a Privacidade e Acessibilidade (WCAG 2.1).</p>
-    </footer>
+                  <div v-else class="text-center py-8 text-slate-500">
+                    <v-icon size="56" color="slate-300" class="mb-2">mdi-eye-check-outline</v-icon>
+                    <div class="text-subtitle-1 font-weight-bold">Pronto para Analisar</div>
+                    <div class="text-body-2">Pressione ESPAÇO ou toque no botão para capturar o ambiente.</div>
+                  </div>
+                </div>
+
+                <!-- Botões de Ação do Resultado -->
+                <div class="d-flex gap-2">
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    class="flex-grow-1 font-weight-bold rounded-lg"
+                    size="large"
+                    :disabled="!lastSpeechText"
+                    @click="repeatAudio"
+                  >
+                    <v-icon start icon="mdi-volume-high"></v-icon>
+                    Repetir Voz (R)
+                  </v-btn>
+
+                  <v-btn
+                    color="secondary"
+                    variant="tonal"
+                    class="font-weight-bold rounded-lg"
+                    size="large"
+                    @click="askWithVoicePrompt"
+                  >
+                    <v-icon start icon="mdi-microphone"></v-icon>
+                    Falar Pergunta
+                  </v-btn>
+                </div>
+              </v-card>
+            </v-col>
+          </row>
+        </v-container>
+      </v-main>
+
+      <!-- Modal de Instruções e Ajuda -->
+      <v-dialog v-model="showHelpDialog" max-width="550">
+        <v-card class="rounded-xl pa-4">
+          <v-card-title class="d-flex align-center text-h6 font-weight-bold text-slate-800">
+            <v-icon color="primary" class="mr-2">mdi-accessibility-fit</v-icon>
+            Como Usar por Voz e Teclado
+          </v-card-title>
+
+          <v-card-text class="text-body-1 text-slate-700">
+            <p class="mb-3">Este aplicativo foi totalmente desenhado para ser operado <strong>sem enxergar a tela</strong>:</p>
+
+            <div class="text-subtitle-2 font-weight-bold text-primary mb-1">🎤 Comandos de Voz (Modo Mãos Livres):</div>
+            <ul class="pl-4 mb-4">
+              <li><strong>"Capturar"</strong> ou <strong>"Analisar"</strong>: Tira a foto e lê a cena.</li>
+              <li><strong>"O que tem na minha frente?"</strong>: Faz a pergunta e analisa a imagem.</li>
+              <li><strong>"Repetir"</strong>: Ouve a última resposta novamente.</li>
+            </ul>
+
+            <div class="text-subtitle-2 font-weight-bold text-primary mb-1">⌨️ Atalhos de Teclado:</div>
+            <ul class="pl-4 mb-3">
+              <li><kbd>Espaço</kbd> ou <kbd>Enter</kbd>: Capturar e analisar foto.</li>
+              <li><kbd>R</kbd>: Repetir voz do áudio.</li>
+              <li><kbd>V</kbd>: Ligar/Desligar escuta de voz contínua.</li>
+            </ul>
+          </v-card-text>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" variant="flat" class="font-weight-bold px-6" @click="showHelpDialog = false">Entendi</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+    </v-app>
   </div>
 
+  <!-- Scripts CDN Vue 3 e Vuetify 3 -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.5/dist/vuetify.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

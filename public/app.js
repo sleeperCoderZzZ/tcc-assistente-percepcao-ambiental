@@ -1,732 +1,367 @@
 /**
- * CLIENTE PWA ACESSÍVEL - ASSISTENTE DE PERCEPÇÃO AMBIENTAL MULTI-AGENTE
- * Com Extração de Métricas de Pixels no Agente Local, Detecção de Fones, Roupas, Pessoas e Retorno Auditivo.
- * Versão Ultra-Moderna com Correções de Bugs Web Audio, SpeechSynthesis, Focus Trap e Câmera.
+ * ASSISTENTE DE PERCEPÇÃO AMBIENTAL PARA DEFICIENTES VISUAIS (TCC - RETENÇÃO ZERO)
+ * Aplicação Vue.js 3 com Vuetify 3, Controle por Voz Contínuo (STT), Sintetizador Humano (TTS)
+ * e Sonificação Web Audio API.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Elementos do DOM
-  const cameraFeed = document.getElementById('camera-feed');
-  const captureCanvas = document.getElementById('capture-canvas');
-  const imagePlaceholder = document.getElementById('image-placeholder');
-  const scanOverlay = document.getElementById('scan-overlay');
-  const cameraStatusPill = document.getElementById('camera-status-pill');
-  
-  const btnToggleCamera = document.getElementById('btn-toggle-camera');
-  const btnCapture = document.getElementById('btn-capture');
-  const btnDetectPerson = document.getElementById('btn-detect-person');
-  const btnVoiceInput = document.getElementById('btn-voice-input');
-  const btnSubmitQuestion = document.getElementById('btn-submit-question');
-  const btnSpeakAgain = document.getElementById('btn-speak-again');
-  const btnOpenTour = document.getElementById('btn-open-tour');
-  const btnToggleAudio = document.getElementById('btn-toggle-audio');
-  
-  const inputQuestion = document.getElementById('input-question');
-  const hazardAlertBox = document.getElementById('hazard-alert-box');
-  const hazardList = document.getElementById('hazard-list');
-  
-  const humanDetectionBox = document.getElementById('human-detection-box');
-  const badgeHumanStatus = document.getElementById('badge-human-status');
-  const badgeProximity = document.getElementById('badge-proximity');
-  const humanDetailsText = document.getElementById('human-details-text');
-  
-  const statusIndicator = document.getElementById('status-indicator');
-  const statusText = document.getElementById('status-text');
-  const descriptionText = document.getElementById('description-text');
-  const infoProvider = document.getElementById('info-provider');
-  
-  const assertiveAnnouncer = document.getElementById('aria-assertive-announcer');
-  const politeAnnouncer = document.getElementById('aria-polite-announcer');
+const { createApp, ref, computed, onMounted } = Vue;
+const { createVuetify } = Vuetify;
 
-  // Elementos do Modal do Guia Passo a Passo
-  const tourModal = document.getElementById('tour-modal');
-  const tourSpotlight = document.getElementById('tour-spotlight');
-  const tourStepBadge = document.getElementById('tour-step-badge');
-  const tourStepTitle = document.getElementById('tour-step-title');
-  const tourStepText = document.getElementById('tour-step-text');
-  const tourIconBox = document.getElementById('tour-icon-box');
-  
-  const btnTourPrev = document.getElementById('btn-tour-prev');
-  const btnTourNext = document.getElementById('btn-tour-next');
-  const btnTourSpeak = document.getElementById('btn-tour-speak');
-  const btnCloseTour = document.getElementById('btn-close-tour');
-
-  let mediaStream = null;
-  let currentSpeechText = '';
-  let audioNavigationEnabled = true;
-  let speakDebounceTimer = null;
-  let lastFocusedElementBeforeTour = null;
-
-  /**
-   * ==========================================================================
-   * CORREÇÃO BUG 1: INICIALIZAÇÃO DE WEB AUDIO API COM UNLOCK DE GESTO
-   * ==========================================================================
-   */
-  let audioCtx = null;
-
-  function getAudioContext() {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        audioCtx = new AudioContextClass();
+const vuetify = createVuetify({
+  theme: {
+    defaultTheme: 'pastelTheme',
+    themes: {
+      pastelTheme: {
+        dark: false,
+        colors: {
+          primary: '#0284C7',     /* Azul Sereno */
+          secondary: '#7C3AED',   /* Lavanda Suave */
+          surface: '#FFFFFF',
+          'surface-variant': '#F8FAFC',
+          accent: '#0D9488',      /* Menta Escuro */
+          emerald: '#10B981',
+          error: '#DC2626',
+          warning: '#D97706',
+          info: '#0284C7'
+        }
       }
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
-    return audioCtx;
   }
+});
 
-  // Unlock AudioContext on first user click or key press anywhere on page
-  const unlockAudioContext = () => {
-    getAudioContext();
-    document.removeEventListener('click', unlockAudioContext);
-    document.removeEventListener('keydown', unlockAudioContext);
-  };
-  document.addEventListener('click', unlockAudioContext);
-  document.addEventListener('keydown', unlockAudioContext);
+const app = createApp({
+  setup() {
+    // Refs reativas
+    const videoRef = ref(null);
+    const canvasRef = ref(null);
+    const isCameraActive = ref(false);
+    const isProcessing = ref(false);
+    const isVoiceListening = ref(false);
+    const showHelpDialog = ref(false);
+    const userQuestion = ref('');
+    const latestAnalysis = ref(null);
+    const lastSpeechText = ref('');
+    
+    let mediaStream = null;
+    let speechSynth = window.speechSynthesis;
+    let speechUtterance = null;
+    let selectedVoice = null;
+    let speechRecognition = null;
+    let audioCtx = null;
 
-  function playFocusSound() {
-    if (!audioNavigationEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx || ctx.state !== 'running') return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.08);
-    } catch (e) {}
-  }
-
-  function playClickSound() {
-    if (!audioNavigationEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx || ctx.state !== 'running') return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
-      
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {}
-  }
-
-  /**
-   * ==========================================================================
-   * CORREÇÃO BUG 3: DEBOUNCE E RESUME EM SPEECHSYNTHESIS (PREVINE FREEZE DO CHROME)
-   * ==========================================================================
-   */
-  function speakText(text, isNavigation = false) {
-    if (!('speechSynthesis' in window)) return;
-    if (isNavigation && !audioNavigationEnabled) return;
-
-    if (isNavigation) {
-      if (speakDebounceTimer) clearTimeout(speakDebounceTimer);
-      speakDebounceTimer = setTimeout(() => {
-        executeSpeech(text);
-      }, 150);
-    } else {
-      executeSpeech(text);
-    }
-  }
-
-  function executeSpeech(text) {
-    try {
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
+    // Web Audio API para Beeps de Sonificação Acessível
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
       }
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 1.1;
-      utterance.pitch = 1.0;
-
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.warn('Erro na emissão de voz SpeechSynthesis:', e);
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
     }
-  }
 
-  /**
-   * AGENTE LOCAL DE EXTRAÇÃO DE MÉTRICAS VISUAIS (PIXEL FEATURE EXTRACTOR)
-   */
-  function extractVisualPixelMetrics(canvas, ctx) {
-    try {
-      const width = canvas.width;
-      const height = canvas.height;
-      if (width === 0 || height === 0) return null;
+    function playTone(freq = 440, duration = 0.1, type = 'sine') {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
 
-      const imageData = ctx.getImageData(0, 0, width, height);
+    // Regiões ARIA Live
+    function announceAssertive(text) {
+      const el = document.getElementById('aria-assertive');
+      if (el) el.textContent = text;
+    }
+    function announcePolite(text) {
+      const el = document.getElementById('aria-polite');
+      if (el) el.textContent = text;
+    }
+
+    // Inicialização do Motor de Câmera
+    async function startCamera() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          announceAssertive('Erro: Câmera não suportada neste navegador.');
+          return;
+        }
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        if (videoRef.value) {
+          videoRef.value.srcObject = mediaStream;
+          isCameraActive.value = true;
+          playTone(523.25, 0.15); // Tone C5 de Câmera Ativa
+          announcePolite('Câmera ativada com sucesso.');
+        }
+      } catch (err) {
+        console.error('Falha ao acessar câmera:', err);
+        announceAssertive('Erro ao acessar a câmera. Verifique as permissões.');
+      }
+    }
+
+    // Busca e Seleção de Vozes Naturais em Português (TTS Humano)
+    function loadHumanVoices() {
+      if (!speechSynth) return;
+      const voices = speechSynth.getVoices();
+      // Prioridade: Vozes Neurais ou Naturais PT-BR (Google, Microsoft, Apple)
+      selectedVoice = voices.find(v => v.lang.includes('pt') && (
+        v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Luciana') || v.name.includes('Felipe') || v.name.includes('Francisca') || v.name.includes('Helena')
+      )) || voices.find(v => v.lang.includes('pt-BR')) || voices.find(v => v.lang.includes('pt'));
+    }
+
+    if (speechSynth) {
+      loadHumanVoices();
+      if (speechSynth.onvoiceschanged !== undefined) {
+        speechSynth.onvoiceschanged = loadHumanVoices;
+      }
+    }
+
+    // Síntese de Fala Humana Acolhedora
+    function speakNaturalText(text, priority = 'NORMAL') {
+      if (!speechSynth || !text) return;
+      speechSynth.cancel(); // Cancelar falas anteriores
+
+      speechUtterance = new SpeechSynthesisUtterance(text);
+      speechUtterance.lang = 'pt-BR';
+      if (selectedVoice) speechUtterance.voice = selectedVoice;
+
+      // Parâmetros sintonizados para voz natural humana
+      speechUtterance.rate = 1.05; // Velocidade natural fluida
+      speechUtterance.pitch = priority === 'HIGH' ? 1.15 : 1.0; // Tom mais alto para perigo
+
+      speechSynth.speak(speechUtterance);
+      announceAssertive(text);
+    }
+
+    // Repetir a última leitura de voz (Atalho: R)
+    function repeatAudio() {
+      if (lastSpeechText.value) {
+        speakNaturalText(lastSpeechText.value, latestAnalysis.value?.priority);
+      } else {
+        speakNaturalText('Nenhuma análise anterior para repetir.');
+      }
+    }
+
+    // Modo Mãos Livres: Reconhecimento de Voz Contínuo (STT)
+    function initVoiceRecognition() {
+      const SpeechClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechClass) {
+        console.warn('Reconhecimento de voz não suportado neste navegador.');
+        return;
+      }
+
+      speechRecognition = new SpeechClass();
+      speechRecognition.continuous = true;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = 'pt-BR';
+
+      speechRecognition.onresult = (event) => {
+        const lastIndex = event.results.length - 1;
+        const transcript = event.results[lastIndex][0].transcript.trim().toLowerCase();
+        console.log('Comando de voz recebido:', transcript);
+
+        if (transcript.includes('capturar') || transcript.includes('analisar') || transcript.includes('foto')) {
+          captureAndAnalyze();
+        } else if (transcript.includes('repetir') || transcript.includes('ouvir de novo')) {
+          repeatAudio();
+        } else if (transcript.includes('o que tem') || transcript.includes('o que há') || transcript.includes('quem está')) {
+          userQuestion.value = transcript;
+          captureAndAnalyze();
+        }
+      };
+
+      speechRecognition.onerror = (err) => {
+        console.warn('Erro na escuta por voz:', err.error);
+      };
+    }
+
+    function toggleVoiceListening() {
+      if (!speechRecognition) initVoiceRecognition();
+      if (!speechRecognition) {
+        speakNaturalText('Reconhecimento de voz não suportado neste navegador.');
+        return;
+      }
+
+      if (isVoiceListening.value) {
+        speechRecognition.stop();
+        isVoiceListening.value = false;
+        speakNaturalText('Modo de comando por voz desativado.');
+      } else {
+        try {
+          speechRecognition.start();
+          isVoiceListening.value = true;
+          playTone(880, 0.15);
+          speakNaturalText('Modo de comando por voz ativado. Diga Capturar a qualquer momento.');
+        } catch (e) {
+          isVoiceListening.value = false;
+        }
+      }
+    }
+
+    function askWithVoicePrompt() {
+      if (!isVoiceListening.value) {
+        toggleVoiceListening();
+      } else {
+        speakNaturalText('Fale sua pergunta agora.');
+      }
+    }
+
+    // Capturar Foto e Enviar para o Backend Express (Retenção Zero)
+    async function captureAndAnalyze() {
+      if (isProcessing.value) return;
+
+      playTone(659.25, 0.12); // Som de acionamento
+      if (navigator.vibrate) navigator.vibrate(100); // Feedback tátil
+
+      if (!videoRef.value || !canvasRef.value) return;
+
+      const video = videoRef.value;
+      const canvas = canvasRef.value;
+
+      if (!video.videoWidth || !video.videoHeight) {
+        speakNaturalText('Câmera ainda carregando. Aguarde um segundo e tente novamente.');
+        return;
+      }
+
+      isProcessing.value = true;
+      announcePolite('Capturando imagem e enviando para análise...');
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Extração de métricas de pixels no agente visual local
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      const totalPixels = width * height;
-
+      let totalPixels = data.length / 4;
       let skinPixels = 0;
       let totalBrightness = 0;
-      let rSum = 0, gSum = 0, bSum = 0;
-      let edgeCount = 0;
 
-      // Amostragem de pixels (passo de 4 pixels para alta performance)
-      for (let i = 0; i < data.length; i += 16) {
+      for (let i = 0; i < data.length; i += 16) { // Amostragem rápida a cada 4 pixels
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
 
-        const brightness = (r + g + b) / 3;
-        totalBrightness += brightness;
-
-        rSum += r; gSum += g; bSum += b;
-
-        // Regra heurística de detecção de tom de pele em RGB
-        const isSkin = (r > 95) && (g > 40) && (b > 20) &&
-                       (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
-                       (Math.abs(r - g) > 15) && (r > g) && (r > b);
-        if (isSkin) skinPixels++;
-
-        // Detecção de bordas para fones e óculos
-        if (i > 16) {
-          const prevR = data[i - 16];
-          if (Math.abs(r - prevR) > 50) edgeCount++;
+        // Regra de detecção de tom de pele HSV/RGB
+        if (r > 95 && g > 40 && b > 20 && r > g && r > b && (Math.max(r, g, b) - Math.min(r, g, b) > 15) && Math.abs(r - g) > 15) {
+          skinPixels++;
         }
+        totalBrightness += (r + g + b) / 3;
       }
 
-      const sampledPixels = totalPixels / 4;
-      const skinRatio = skinPixels / sampledPixels;
-      const edgeDensity = edgeCount / sampledPixels;
-      const avgBrightness = totalBrightness / sampledPixels;
+      const skinRatio = skinPixels / (totalPixels / 4);
+      const avgBrightness = Math.round(totalBrightness / (totalPixels / 4));
 
-      const avgR = Math.round(rSum / sampledPixels);
-      const avgG = Math.round(gSum / sampledPixels);
-      const avgB = Math.round(bSum / sampledPixels);
-
-      let clothingColor = 'escuro';
-      if (avgR > 160 && avgG > 160 && avgB > 160) clothingColor = 'claro / branco';
-      else if (avgR > avgG && avgR > avgB) clothingColor = 'vermelho / quente';
-      else if (avgG > avgR && avgG > avgB) clothingColor = 'verde';
-      else if (avgB > avgR && avgB > avgG) clothingColor = 'azul / frio';
-
-      return {
-        skinRatio: skinRatio,
-        hasFaceCandidate: skinRatio > 0.08,
-        headphoneCandidate: edgeDensity > 0.15,
-        edgeDensity: edgeDensity,
-        brightness: avgBrightness,
-        dominantColors: [clothingColor]
-      };
-    } catch (e) {
-      console.warn('Falha na extração local de métricas de pixels:', e);
-      return null;
-    }
-  }
-
-  btnToggleAudio.addEventListener('click', () => {
-    audioNavigationEnabled = !audioNavigationEnabled;
-    if (audioNavigationEnabled) {
-      btnToggleAudio.classList.remove('muted');
-      btnToggleAudio.classList.add('active');
-      btnToggleAudio.innerHTML = '<span aria-hidden="true">🔊</span> Som de Navegação: ON';
-      btnToggleAudio.setAttribute('aria-label', 'Alternar retorno de áudio de navegação. Status atual: Ativado');
-      announcePolite('Sons de navegação ativados.');
-      playClickSound();
-      speakText('Sons de navegação e retorno audível ativados.', true);
-    } else {
-      btnToggleAudio.classList.remove('active');
-      btnToggleAudio.classList.add('muted');
-      btnToggleAudio.innerHTML = '<span aria-hidden="true">🔇</span> Som de Navegação: OFF';
-      btnToggleAudio.setAttribute('aria-label', 'Alternar retorno de áudio de navegação. Status atual: Desativado');
-      announcePolite('Sons de navegação desativados.');
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    }
-  });
-
-  function attachAudioFeedbackToElements() {
-    const interactiveElements = document.querySelectorAll('button, input, a, summary, [tabindex="0"]');
-
-    interactiveElements.forEach(el => {
-      el.addEventListener('focus', () => {
-        playFocusSound();
-        const label = el.getAttribute('data-audio-label') || el.getAttribute('aria-label') || el.innerText || el.placeholder;
-        if (label) {
-          speakText(label, true);
+      // Converter canvas para Blob JPEG efêmero
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          isProcessing.value = false;
+          speakNaturalText('Erro ao capturar a imagem.');
+          return;
         }
-      });
 
-      el.addEventListener('click', () => {
-        playClickSound();
-      });
-    });
-  }
+        const formData = new FormData();
+        formData.append('image', blob, 'capture.jpg');
+        if (userQuestion.value) {
+          formData.append('userQuestion', userQuestion.value);
+        }
 
-  attachAudioFeedbackToElements();
+        formData.append('visualFeatures', JSON.stringify({
+          skinRatio: skinRatio,
+          brightness: avgBrightness,
+          hasFaceCandidate: skinRatio > 0.08,
+          edgeDensity: 0.25
+        }));
 
-  /**
-   * ==========================================================================
-   * CORREÇÃO BUG 2: LIMPEZA COMPLETA DE MEDIASTREAM E SRCOBJECT NA CÂMERA
-   * ==========================================================================
-   */
-  async function startCamera() {
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment', 
-          width: { ideal: 1920, max: 3840 }, 
-          height: { ideal: 1080, max: 2160 } 
-        },
-        audio: false
-      });
-      cameraFeed.srcObject = mediaStream;
-      cameraFeed.classList.remove('hidden');
-      imagePlaceholder.classList.add('hidden');
-      cameraStatusPill.textContent = '● Câmera Ativa';
-      cameraStatusPill.style.color = 'var(--accent-success)';
-      announcePolite('Câmera em alta resolução ativada.');
-    } catch (err) {
-      console.warn('Câmera indisponível ou permissão negada:', err);
-      cameraStatusPill.textContent = '○ Câmera Inativa';
-      cameraStatusPill.style.color = 'var(--accent-warning)';
-      announceAssertive('Aviso: Não foi possível acessar a câmera do dispositivo.');
-    }
-  }
-
-  function stopCamera() {
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
-      mediaStream = null;
-    }
-    cameraFeed.srcObject = null; // Bug fix: liberar srcObject
-    cameraFeed.classList.add('hidden');
-    imagePlaceholder.classList.remove('hidden');
-    cameraStatusPill.textContent = '○ Câmera Inativa';
-    cameraStatusPill.style.color = 'var(--text-muted)';
-    announcePolite('Câmera desligada.');
-  }
-
-  btnToggleCamera.addEventListener('click', () => {
-    if (mediaStream) {
-      stopCamera();
-    } else {
-      startCamera();
-    }
-  });
-
-  /**
-   * Captura de Frame de Imagem e Extração de Métricas de Pixels
-   */
-  function getCapturedImageWithMetrics() {
-    return new Promise((resolve) => {
-      let ctx;
-      if (mediaStream && cameraFeed.videoWidth > 0) {
-        captureCanvas.width = cameraFeed.videoWidth;
-        captureCanvas.height = cameraFeed.videoHeight;
-        ctx = captureCanvas.getContext('2d');
-        ctx.drawImage(cameraFeed, 0, 0, captureCanvas.width, captureCanvas.height);
-      } else {
-        captureCanvas.width = 1280;
-        captureCanvas.height = 720;
-        ctx = captureCanvas.getContext('2d');
-        ctx.fillStyle = '#070a14';
-        ctx.fillRect(0, 0, 1280, 720);
-        ctx.fillStyle = '#00f2fe';
-        ctx.font = 'bold 36px Outfit, sans-serif';
-        ctx.fillText('Captura de Alta Resolução Multi-Agente', 280, 360);
-      }
-
-      const metrics = extractVisualPixelMetrics(captureCanvas, ctx);
-
-      captureCanvas.toBlob((blob) => {
-        resolve({ blob, metrics });
-      }, 'image/jpeg', 0.95);
-    });
-  }
-
-  /**
-   * Anúncios para Leitores de Tela (ARIA Live Regions)
-   */
-  function announcePolite(message) {
-    politeAnnouncer.textContent = '';
-    setTimeout(() => {
-      politeAnnouncer.textContent = message;
-    }, 50);
-  }
-
-  function announceAssertive(message) {
-    assertiveAnnouncer.textContent = '';
-    setTimeout(() => {
-      assertiveAnnouncer.textContent = message;
-    }, 50);
-  }
-
-  /**
-   * ==========================================================================
-   * CORREÇÃO BUG 4: TRATAMENTO DE ONEND E ONERROR NO RECONHECIMENTO DE VOZ (STT)
-   * ==========================================================================
-   */
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      announcePolite('Reconhecimento de voz ativado. Fale a sua dúvida sobre o ambiente.');
-      btnVoiceInput.classList.add('active');
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      inputQuestion.value = transcript;
-      announcePolite(`Pergunta registrada por voz: ${transcript}`);
-      btnVoiceInput.classList.remove('active');
-    };
-
-    recognition.onerror = () => {
-      announcePolite('Não foi possível compreender o áudio. Tente novamente.');
-      btnVoiceInput.classList.remove('active');
-    };
-
-    recognition.onend = () => {
-      btnVoiceInput.classList.remove('active'); // Bug fix: desativar pulse ao encerrar
-    };
-
-    btnVoiceInput.addEventListener('click', () => {
-      try {
-        recognition.start();
-      } catch (e) {
-        recognition.stop();
-        btnVoiceInput.classList.remove('active');
-      }
-    });
-  } else {
-    btnVoiceInput.disabled = true;
-    btnVoiceInput.title = 'Reconhecimento de voz não suportado neste navegador.';
-  }
-
-  const detectedObjectsContainer = document.getElementById('detected-objects-container');
-  const objectsCountPill = document.getElementById('objects-count-pill');
-
-  /**
-   * Fluxo de Análise Multi-Agente Efêmero no Middleware (Retenção Zero)
-   */
-  async function performEnvironmentalAnalysis(overrideQuestion) {
-    btnCapture.disabled = true;
-    btnDetectPerson.disabled = true;
-    scanOverlay.classList.remove('hidden');
-    statusIndicator.classList.add('loading');
-    statusText.textContent = 'Orquestrando Agentes de Percepção (Pixels + VLM) em memória RAM...';
-    announcePolite('Processando imagem com múltiplos agentes de visão. Por favor aguarde...');
-
-    try {
-      const { blob: imageBlob, metrics: visualFeatures } = await getCapturedImageWithMetrics();
-      const question = overrideQuestion || inputQuestion.value.trim();
-
-      const formData = new FormData();
-      formData.append('image', imageBlob, 'capture.jpg');
-      if (question) {
-        formData.append('question', question);
-      }
-      if (visualFeatures) {
-        formData.append('visualFeatures', JSON.stringify(visualFeatures));
-      }
-
-      const response = await fetch('/api/perceive', {
-        method: 'POST',
-        body: formData
-      });
-
-      const json = await response.json();
-
-      if (!json.success) {
-        throw new Error(json.error || 'Falha no servidor middleware.');
-      }
-
-      const data = json.data;
-      currentSpeechText = data.speechText || data.description;
-
-      infoProvider.textContent = data.provider || 'Multi-Agente Híbrido';
-
-      if (data.humanDetected) {
-        humanDetectionBox.classList.remove('hidden');
-        badgeHumanStatus.textContent = '🧍 Pessoa Detectada: SIM';
-        badgeHumanStatus.style.backgroundColor = 'var(--accent-purple)';
-        badgeProximity.textContent = `📏 Proximidade: ${data.proximityEstimate || 'Aproximada'}`;
-        humanDetailsText.textContent = data.humanDetails || 'Ser humano identificado na imagem.';
-      } else {
-        humanDetectionBox.classList.remove('hidden');
-        badgeHumanStatus.textContent = '👤 Pessoa Detectada: NÃO';
-        badgeHumanStatus.style.backgroundColor = 'var(--bg-surface)';
-        badgeProximity.textContent = `📏 Proximidade: ${data.proximityEstimate || 'Desobstruído'}`;
-        humanDetailsText.textContent = 'Nenhuma pessoa identificada no caminho imediato.';
-      }
-
-      // Renderizar catálogo de objetos e elementos identificados (Acurácia)
-      if (detectedObjectsContainer && objectsCountPill) {
-        const objectsList = Array.isArray(data.detectedObjects) ? data.detectedObjects : [];
-        detectedObjectsContainer.innerHTML = '';
-
-        if (objectsList.length > 0) {
-          objectsCountPill.textContent = `${objectsList.length} elemento${objectsList.length > 1 ? 's' : ''}`;
-          objectsList.forEach(obj => {
-            const chip = document.createElement('div');
-            chip.className = 'object-chip';
-            chip.innerHTML = `<span class="chip-icon">🔍</span><span class="chip-text">${obj}</span>`;
-            detectedObjectsContainer.appendChild(chip);
+        try {
+          const response = await fetch('/api/perceive', {
+            method: 'POST',
+            body: formData
           });
-        } else {
-          objectsCountPill.textContent = '0 elementos';
-          detectedObjectsContainer.innerHTML = '<span class="empty-objects-msg">Nenhum objeto específico catalogado nesta varredura.</span>';
+
+          if (!response.ok) {
+            throw new Error(`HTTP Error (${response.status})`);
+          }
+
+          const result = await response.json();
+          latestAnalysis.value = result;
+          lastSpeechText.value = result.speechText || result.description;
+
+          isProcessing.value = false;
+
+          // Perigo/Emergência
+          if (result.priority === 'HIGH' || (result.hazards && result.hazards.length > 0)) {
+            playTone(987.77, 0.4, 'sawtooth'); // Beep de alerta de perigo
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+          } else {
+            playTone(523.25, 0.15); // Beep de sucesso
+          }
+
+          // Leitura por voz humana imediata
+          speakNaturalText(lastSpeechText.value, result.priority);
+
+        } catch (err) {
+          console.error('Erro na requisição /api/perceive:', err);
+          isProcessing.value = false;
+          const errMsg = 'Desculpe, ocorreu uma falha na conexão com a inteligência visual. Tente novamente.';
+          speakNaturalText(errMsg);
         }
-      }
-
-      if (data.priority === 'HIGH' && data.hazards && data.hazards.length > 0) {
-        hazardAlertBox.classList.remove('hidden');
-        hazardList.innerHTML = '';
-        data.hazards.forEach(hazard => {
-          const li = document.createElement('li');
-          li.textContent = hazard;
-          hazardList.appendChild(li);
-        });
-
-        announceAssertive(`ALERTA DE SEGURANÇA! ${data.hazards.join(' ')}`);
-        speakText(currentSpeechText);
-      } else {
-        hazardAlertBox.classList.add('hidden');
-        announcePolite(`Percepção concluída: ${data.description}`);
-        speakText(currentSpeechText);
-      }
-
-      descriptionText.textContent = data.description;
-      statusText.textContent = 'Percepção concluída por Múltiplos Agentes (Dados descartados da RAM).';
-      btnSpeakAgain.disabled = false;
-
-    } catch (err) {
-      console.error('Erro na requisição de percepção:', err);
-      statusText.textContent = 'Erro no processamento.';
-      descriptionText.textContent = `Ocorreu um erro: ${err.message}`;
-      announceAssertive(`Erro ao analisar ambiente: ${err.message}`);
-    } finally {
-      scanOverlay.classList.add('hidden');
-      statusIndicator.classList.remove('loading');
-      btnCapture.disabled = false;
-      btnDetectPerson.disabled = false;
-    }
-  }
-
-  btnCapture.addEventListener('click', () => performEnvironmentalAnalysis());
-  
-  btnDetectPerson.addEventListener('click', () => {
-    performEnvironmentalAnalysis('Examine em detalhes a pessoa, incluindo fones de ouvido, roupas, óculos e proximidade exata.');
-  });
-
-  btnSpeakAgain.addEventListener('click', () => {
-    if (currentSpeechText) {
-      speakText(currentSpeechText);
-    }
-  });
-
-  btnSubmitQuestion.addEventListener('click', () => {
-    performEnvironmentalAnalysis(inputQuestion.value.trim());
-  });
-
-  inputQuestion.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      performEnvironmentalAnalysis(inputQuestion.value.trim());
-    }
-  });
-
-  /**
-   * MODO GUIA PASSO A PASSO INTERATIVO E CORREÇÃO BUG 5 (FOCUS TRAP)
-   */
-  const tourSteps = [
-    {
-      step: 1,
-      badge: 'Passo 1 de 5',
-      title: 'Bem-vindo e Privacidade de Dados',
-      icon: '🔒',
-      targetId: 'main-content',
-      text: 'Bem-vindo ao Assistente de Percepção Ambiental Multi-Agente! Este sistema utiliza Inteligência Artificial e agentes múltiplos para descrever o ambiente e alertar sobre perigos físicos em tempo real. Importante: suas imagens e áudios são processados exclusivamente na memória RAM e descartados imediatamente, garantindo Retenção Zero de Dados.'
-    },
-    {
-      step: 2,
-      badge: 'Passo 2 de 5',
-      title: 'Captura da Câmera e Análise de Pixels',
-      icon: '📷',
-      targetId: 'section-capture',
-      text: 'Nesta seção você tem a visualização em tempo real da câmera. Aponte a câmera do dispositivo para a direção em que deseja andar. Clique em "Detectar Pessoas" ou "Analisar Ambiente Agora" (Atalho Alt + A) para acionar a leitura dos agentes.'
-    },
-    {
-      step: 3,
-      badge: 'Passo 3 de 5',
-      title: 'Pergunta por Voz ou Texto',
-      icon: '🎙️',
-      targetId: 'section-question',
-      text: 'Se você tiver uma dúvida específica sobre o ambiente à frente (como: "Há pessoas perto?", "Estou vendo alguém com fone?", "Há algum degrau?"), você pode clicar no botão do microfone para ditar sua pergunta por voz ou digitar no campo de texto.'
-    },
-    {
-      step: 4,
-      badge: 'Passo 4 de 5',
-      title: 'Descrição Multi-Agente e Retorno Auditivo',
-      icon: '🔊',
-      targetId: 'section-result',
-      text: 'Assim que a análise for concluída, os agentes identificarão se há pessoas, roupas, fones de ouvido, óculos e estimarão a distância em metros, lendo a instrução em voz alta automaticamente.'
-    },
-    {
-      step: 5,
-      badge: 'Passo 5 de 5',
-      title: 'Atalhos de Teclado Rápidos',
-      icon: '⌨️',
-      targetId: 'main-content',
-      text: 'Você pode controlar a aplicação rapidamente pelo teclado a qualquer momento: pressione Alt + G para abrir este guia passo a passo, Alt + A para analisar o ambiente, Alt + P para detectar pessoas, e Alt + R para repetir o último áudio de descrição.'
-    }
-  ];
-
-  let currentTourStepIndex = 0;
-
-  function updateTourStep(index) {
-    if (index < 0 || index >= tourSteps.length) return;
-    
-    currentTourStepIndex = index;
-    const stepData = tourSteps[index];
-
-    tourStepBadge.textContent = stepData.badge;
-    tourStepTitle.textContent = stepData.title;
-    tourIconBox.textContent = stepData.icon;
-    tourStepText.textContent = stepData.text;
-
-    btnTourPrev.disabled = index === 0;
-    if (index === tourSteps.length - 1) {
-      btnTourNext.textContent = 'Concluir Guia ✓';
-    } else {
-      btnTourNext.textContent = 'Próximo →';
+      }, 'image/jpeg', 0.85);
     }
 
-    const targetEl = document.getElementById(stepData.targetId);
-    if (targetEl) {
-      const rect = targetEl.getBoundingClientRect();
-      tourSpotlight.style.top = `${window.scrollY + rect.top - 8}px`;
-      tourSpotlight.style.left = `${window.scrollX + rect.left - 8}px`;
-      tourSpotlight.style.width = `${rect.width + 16}px`;
-      tourSpotlight.style.height = `${rect.height + 16}px`;
-      tourSpotlight.classList.remove('hidden');
+    // Atalhos Globais de Teclado
+    onMounted(() => {
+      startCamera();
+      initVoiceRecognition();
 
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      tourSpotlight.classList.add('hidden');
-    }
+      window.addEventListener('keydown', (e) => {
+        // Se estiver digitando no campo de texto, não dispara atalhos rápidos de tecla única
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+          return;
+        }
 
-    speakText(`${stepData.title}. ${stepData.text}`);
-    announcePolite(`Guia passo ${index + 1}: ${stepData.title}`);
-  }
-
-  function openTour() {
-    lastFocusedElementBeforeTour = document.activeElement;
-    tourModal.classList.remove('hidden');
-    updateTourStep(0);
-    btnCloseTour.focus();
-  }
-
-  function closeTour() {
-    tourModal.classList.add('hidden');
-    tourSpotlight.classList.add('hidden');
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    announcePolite('Guia passo a passo fechado.');
-    if (lastFocusedElementBeforeTour && typeof lastFocusedElementBeforeTour.focus === 'function') {
-      lastFocusedElementBeforeTour.focus();
-    }
-  }
-
-  // Focus trap keyboard navigation inside modal (WCAG 2.1 AAA)
-  tourModal.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      const focusableModalElements = tourModal.querySelectorAll('button:not([disabled])');
-      const firstEl = focusableModalElements[0];
-      const lastEl = focusableModalElements[focusableModalElements.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstEl) {
+        if (e.code === 'Space' || e.code === 'Enter') {
           e.preventDefault();
-          lastEl.focus();
-        }
-      } else {
-        if (document.activeElement === lastEl) {
+          captureAndAnalyze();
+        } else if (e.key === 'r' || e.key === 'R') {
           e.preventDefault();
-          firstEl.focus();
+          repeatAudio();
+        } else if (e.key === 'v' || e.key === 'V') {
+          e.preventDefault();
+          toggleVoiceListening();
         }
-      }
-    }
-  });
-
-  btnOpenTour.addEventListener('click', openTour);
-  btnCloseTour.addEventListener('click', closeTour);
-  btnTourSpeak.addEventListener('click', () => {
-    const stepData = tourSteps[currentTourStepIndex];
-    speakText(`${stepData.title}. ${stepData.text}`);
-  });
-
-  btnTourNext.addEventListener('click', () => {
-    if (currentTourStepIndex < tourSteps.length - 1) {
-      updateTourStep(currentTourStepIndex + 1);
-    } else {
-      closeTour();
-    }
-  });
-
-  btnTourPrev.addEventListener('click', () => {
-    if (currentTourStepIndex > 0) {
-      updateTourStep(currentTourStepIndex - 1);
-    }
-  });
-
-  /**
-   * ATALHOS GLOBAIS DE TECLADO
-   */
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !tourModal.classList.contains('hidden')) {
-      closeTour();
-      return;
-    }
-
-    if (e.altKey) {
-      const key = e.key.toLowerCase();
-      if (key === 'g') {
-        e.preventDefault();
-        openTour();
-      } else if (key === 'a') {
-        e.preventDefault();
-        performEnvironmentalAnalysis();
-      } else if (key === 'p') {
-        e.preventDefault();
-        performEnvironmentalAnalysis('Examine em detalhes se há qualquer ser humano, pessoa ou rosto à minha frente, mesmo que em close-up. A qual distância exata?');
-      } else if (key === 'r') {
-        e.preventDefault();
-        if (currentSpeechText) speakText(currentSpeechText);
-      }
-    }
-  });
-
-  // Inicialização da Câmera
-  startCamera();
-
-  // Registrar Service Worker para PWA
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
-      console.log('Registro de ServiceWorker em dev:', err);
+      });
     });
+
+    return {
+      videoRef,
+      canvasRef,
+      isCameraActive,
+      isProcessing,
+      isVoiceListening,
+      showHelpDialog,
+      userQuestion,
+      latestAnalysis,
+      lastSpeechText,
+      captureAndAnalyze,
+      repeatAudio,
+      toggleVoiceListening,
+      askWithVoicePrompt
+    };
   }
 });
+
+app.use(vuetify).mount('#app');

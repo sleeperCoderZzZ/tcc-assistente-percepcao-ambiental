@@ -47,6 +47,20 @@ class VisualAnalysisAgent {
     const lightingLevel = brightness > 180 ? 'Muito iluminado' : brightness > 80 ? 'Iluminação adequada' : 'Ambiente escuro';
     detectedObjects.push(`Iluminação: ${lightingLevel}`);
 
+    // Cálculo heurístico determinístico de profundidade/distância
+    // Quanto maior a densidade de bordas no quadrante inferior e a taxa de proporção da pessoa/objeto, menor a distância em metros.
+    let estimatedMeters = 1.8;
+    if (skinRatio > 0.25 || edgeDensity > 0.45) {
+      estimatedMeters = 0.4;
+    } else if (skinRatio > 0.12 || edgeDensity > 0.28) {
+      estimatedMeters = 0.8;
+    } else if (skinRatio > 0.05 || edgeDensity > 0.15) {
+      estimatedMeters = 1.4;
+    } else {
+      estimatedMeters = 2.5;
+    }
+    const proximityLabel = `${estimatedMeters.toString().replace('.', ',')} m`;
+
     return {
       humanDetected: hasHuman,
       skinRatioPercent: Math.round(skinRatio * 100),
@@ -54,6 +68,8 @@ class VisualAnalysisAgent {
       clothingColor: clothingColor || 'não identificado',
       hasHeadphones: hasHeadphones,
       lightingLevel: lightingLevel,
+      estimatedDistanceMeters: estimatedMeters,
+      proximityEstimate: proximityLabel,
       confidence: hasHuman ? 0.88 : 0.95
     };
   }
