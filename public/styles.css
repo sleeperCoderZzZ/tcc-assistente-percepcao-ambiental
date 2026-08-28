@@ -42,8 +42,8 @@ html, body, .v-application {
 /* Container de Centralização Perfeita sem Efeito de Corte */
 .app-container {
   max-width: 1240px !important;
-  margin: 0 auto !important;
-  padding: 2rem 1.5rem !important;
+  margin: 3.5rem auto 0 auto !important; /* Espaçamento de 56px para descolar do header colado */
+  padding: 1.5rem 1.5rem !important;
   overflow: visible !important;
 }
 
