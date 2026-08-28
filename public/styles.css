@@ -1,66 +1,41 @@
 /* ==========================================================================
-   IDENTIDADE VISUAL PASTEL PREMIUM — ASSISTENTE DE PERCEPÇÃO AMBIENTAL
-   Cores Pastéis Otimizadas, Glassmorphism, Sombreados em Camadas e Motion
+   DESIGN SYSTEM PASTEL CLEAN & ACESSIBILIDADE CEGO-FIRST (WCAG 2.1 AAA)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap');
-
 :root {
-  /* Paleta Pastel Curada */
-  --bg-gradient-page: linear-gradient(135deg, #F0F4F8 0%, #E2E8F0 50%, #EDF2F7 100%);
-  --surface-glass: rgba(255, 255, 255, 0.92);
-  --surface-glass-subtle: rgba(248, 250, 252, 0.85);
-
+  --bg-gradient: linear-gradient(135deg, #F0F4F8 0%, #E2EDF8 50%, #F4EBF8 100%);
+  --bg-pastel-slate: #F8FAFC;
+  --bg-pastel-surface: #FFFFFF;
   --pastel-blue-light: #E0F2FE;
-  --pastel-blue-main: #0284C7;
-  --pastel-blue-dark: #0369A1;
-
+  --pastel-blue: #38BDF8;
+  --pastel-blue-dark: #0284C7;
+  --pastel-mint-light: #DCFCE7;
+  --pastel-mint: #4ADE80;
+  --pastel-mint-dark: #166534;
   --pastel-purple-light: #F3E8FF;
-  --pastel-purple-main: #7C3AED;
-  --pastel-purple-dark: #6D28D9;
-
-  --pastel-emerald-light: #D1FAE5;
-  --pastel-emerald-main: #059669;
-  --pastel-emerald-dark: #047857;
-
-  --pastel-rose-light: #FFE4E6;
-  --pastel-rose-main: #E11D48;
-  --pastel-rose-dark: #BE123C;
-
-  --pastel-amber-light: #FEF3C7;
-  --pastel-amber-main: #D97706;
-
+  --pastel-purple: #C084FC;
+  --pastel-purple-dark: #7C3AED;
+  --pastel-yellow-light: #FEF3C7;
+  --pastel-yellow: #FBBF24;
+  --pastel-yellow-dark: #92400E;
   --slate-900: #0F172A;
   --slate-800: #1E293B;
   --slate-700: #334155;
   --slate-600: #475569;
   --slate-500: #64748B;
   --slate-300: #CBD5E1;
-  --slate-200: #E2E8F0;
-
-  --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-
-  --radius-pill: 9999px;
-  --radius-2xl: 24px;
-  --radius-xl: 18px;
-  --radius-lg: 14px;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-body {
-  font-family: var(--font-body);
-  background: var(--bg-gradient-page);
-  color: var(--slate-800);
+/* Fundo Gradiente Pastel Global */
+html, body, .v-application {
+  font-family: var(--font-family) !important;
+  background: var(--bg-gradient) !important;
+  color: var(--slate-900) !important;
   margin: 0;
   padding: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-h1, h2, h3, .text-h4, .text-h5, .text-h6, .v-card-title, .v-app-bar-title {
-  font-family: var(--font-heading) !important;
-  letter-spacing: -0.02em !important;
 }
 
 /* Esconder elementos acessíveis apenas para leitores de tela */
@@ -80,88 +55,66 @@ h1, h2, h3, .text-h4, .text-h5, .text-h6, .v-card-title, .v-app-bar-title {
 .skip-link {
   position: absolute;
   top: -100px;
-  left: 16px;
+  left: 10px;
   background: var(--slate-900);
   color: #FFFFFF;
-  padding: 14px 24px;
-  font-weight: 800;
-  border-radius: var(--radius-lg);
+  padding: 12px 20px;
+  font-weight: 700;
+  border-radius: 8px;
   z-index: 9999;
-  transition: top 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: top 0.2s ease;
   text-decoration: none;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
 }
 .skip-link:focus {
-  top: 16px;
-  outline: 4px solid var(--pastel-blue-main);
+  top: 10px;
+  outline: 4px solid var(--pastel-blue-dark);
 }
 
-/* Cartões Glassmorphic e Sombreados Elevados em Camadas */
-.glass-card {
-  background: var(--surface-glass) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.07), 0 4px 16px -4px rgba(15, 23, 42, 0.03) !important;
-  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+/* Estilização Neomórfica dos Cards Pastéis */
+.pastel-card {
+  background: #FFFFFF !important;
+  border: 2px solid #E2E8F0 !important;
+  box-shadow: 0 12px 32px -4px rgba(148, 163, 184, 0.18), 0 4px 12px rgba(148, 163, 184, 0.08) !important;
+  border-radius: 24px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-.glass-card:hover {
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1), 0 8px 24px -6px rgba(15, 23, 42, 0.04) !important;
+.pastel-card-mint {
+  background: #F0FDF4 !important;
+  border: 2px solid #BBF7D0 !important;
 }
 
-/* Utilitários de Cores e Bordas Pastéis */
-.bg-pastel-slate {
-  background-color: #F1F5F9 !important;
-}
-.bg-pastel-mint {
-  background-color: #ECFDF5 !important;
-}
-.bg-pastel-blue {
-  background-color: #F0F9FF !important;
-}
-.bg-pastel-rose {
-  background-color: #FFF1F2 !important;
-}
-.border-pastel {
-  border: 1px solid #E2E8F0 !important;
-}
-.border-mint {
-  border: 1px solid #A7F3D0 !important;
-}
-.border-emerald {
-  border: 1.5px solid #6EE7B7 !important;
-}
-.border-primary {
-  border: 2px solid #0284C7 !important;
-}
-.border-rose {
-  border: 2px solid #FCA5A5 !important;
+.pastel-card-blue {
+  background: #F0F9FF !important;
+  border: 2px solid #BAE6FD !important;
 }
 
-/* Sombra Brilhante Tátil (Glow Effects) */
-.shadow-soft {
-  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.02) !important;
-}
-.shadow-pastel-primary {
-  box-shadow: 0 14px 28px -6px rgba(2, 132, 199, 0.32), 0 4px 10px rgba(2, 132, 199, 0.18) !important;
-}
-.shadow-pastel-emerald {
-  box-shadow: 0 14px 28px -6px rgba(5, 150, 105, 0.3), 0 4px 10px rgba(5, 150, 105, 0.15) !important;
-}
-.shadow-pastel-danger {
-  box-shadow: 0 14px 32px -8px rgba(225, 29, 72, 0.35), 0 4px 12px rgba(225, 29, 72, 0.2) !important;
+.pastel-card-purple {
+  background: #FAF5FF !important;
+  border: 2px solid #E9D5FF !important;
 }
 
-/* Feed da Câmera & Moldura Neomórfica */
+/* Utilitários de Bordas Pastéis */
+.border-pastel-mint {
+  border: 2px solid #A7F3D0 !important;
+}
+.border-pastel-blue {
+  border: 2px solid #7DD3FC !important;
+}
+.border-pastel-purple {
+  border: 2px solid #D8B4FE !important;
+}
+
+/* Wrapper do Feed de Vídeo da Câmera com Efeito Moldura */
 .camera-wrapper {
   aspect-ratio: 4 / 3;
   width: 100%;
   position: relative;
   background-color: #0F172A;
-  border-radius: var(--radius-lg);
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.6), 0 4px 20px rgba(15, 23, 42, 0.15);
+  border-radius: 20px;
+  border: 3px solid #E2E8F0;
   overflow: hidden;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .camera-feed {
@@ -171,143 +124,59 @@ h1, h2, h3, .text-h4, .text-h5, .text-h6, .v-card-title, .v-app-bar-title {
   display: block;
 }
 
-/* Scanner HUD visual com Animação Cyan Glow */
+/* Overlay de scanner pastel animado */
 .scan-line-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(90deg, transparent, #38BDF8, #0284C7, #38BDF8, transparent);
-  box-shadow: 0 0 20px #38BDF8, 0 0 8px #0284C7;
+  background: linear-gradient(90deg, transparent, #38BDF8, #C084FC, transparent);
+  box-shadow: 0 0 20px #38BDF8;
   animation: scanAnimation 1.8s infinite ease-in-out;
 }
 
 @keyframes scanAnimation {
-  0% { top: 0%; opacity: 0.9; }
-  50% { top: 94%; opacity: 1; }
-  100% { top: 0%; opacity: 0.9; }
+  0% { top: 0%; }
+  50% { top: 95%; }
+  100% { top: 0%; }
 }
 
-/* Animação Flutuante para Estado Vazio (Float Bounce) */
-.float-icon {
-  animation: floatBounce 3.5s infinite ease-in-out;
+/* Botão Tactile-First Gigante de Captura */
+.btn-capture-giant {
+  min-height: 64px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em !important;
+  box-shadow: 0 10px 25px -4px rgba(2, 132, 199, 0.4) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-@keyframes floatBounce {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+.btn-capture-giant:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -4px rgba(2, 132, 199, 0.5) !important;
 }
 
-/* Skeleton Loading Shimmer Gradient */
-.skeleton-shimmer {
-  background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite linear;
-  border-radius: 8px;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Indicador de Pulso do Microfone / Status */
-.pulse-badge {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #10B981;
-  box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
-  animation: pulseGreen 1.8s infinite;
-  margin-right: 8px;
-}
-
-@keyframes pulseGreen {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
-  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-/* Animação Entrante para Resultados */
-.fade-in-up {
-  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.btn-capture-giant:active {
+  transform: translateY(1px);
 }
 
 /* Teclas estilizadas <kbd> */
 kbd {
   background-color: #E2E8F0;
   color: #0F172A;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 800;
-  padding: 4px 8px;
+  font-family: monospace;
+  font-weight: 700;
+  padding: 3px 8px;
   border-radius: 6px;
   box-shadow: 0 2px 0 #CBD5E1;
   font-size: 0.85rem;
 }
 
-/* Transições de Botões & Animações Acessíveis */
-.v-btn {
-  font-family: var(--font-heading) !important;
-  letter-spacing: 0.01em !important;
-  text-transform: none !important;
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.v-btn:hover {
-  transform: translateY(-2px) !important;
-}
-
-.v-btn:active {
-  transform: scale(0.96) translateY(0px) !important;
-}
-
-/* Focus Visible para Acessibilidade WCAG 2.1 AAA */
+/* Foco Acessível de Altíssimo Contraste (WCAG AAA) */
 *:focus-visible {
   outline: 4px solid #0284C7 !important;
   outline-offset: 3px !important;
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #F1F5F9;
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-/* Suporte para Preferência de Movimento Reduzido (Accessibility) */
-@media (prefers-reduced-motion: reduce) {
-  .scan-line-overlay,
-  .skeleton-shimmer,
-  .pulse-badge,
-  .float-icon,
-  .fade-in-up {
-    animation: none !important;
-  }
-
-  .v-btn, .glass-card {
-    transition: none !important;
-    transform: none !important;
-  }
 }
