@@ -84,11 +84,10 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
     const clothingColor = pixelAnalysis.clothingColor;
     const proximity = vlmAnalysis ? vlmAnalysis.proximityEstimate : (humanDetected ? '0,9 metro' : 'Desobstruído');
 
-    // Combinar e desduplicar a lista de objetos detectados pelos agentes
-    const rawObjects = [
-      ...(pixelAnalysis.detectedObjects || []),
-      ...(vlmAnalysis && Array.isArray(vlmAnalysis.detectedObjects) ? vlmAnalysis.detectedObjects : [])
-    ];
+    // Priorizar estritamente a lista de objetos identificados pelo modelo de IA VLM real
+    const rawObjects = (vlmAnalysis && Array.isArray(vlmAnalysis.detectedObjects) && vlmAnalysis.detectedObjects.length > 0)
+      ? vlmAnalysis.detectedObjects
+      : (pixelAnalysis.detectedObjects || []);
     const detectedObjects = Array.from(new Set(rawObjects.filter(Boolean)));
 
     // Determinar se há perigo real de emergência
@@ -118,7 +117,11 @@ class HybridEnsemblePerceptionProvider extends BasePerceptionProvider {
       hazards: realHazards,
       description: descriptionText,
       speechText: speechText,
-      provider: `Multi-Agente Híbrido (${this.vlmAgent.name} + VisualAnalysisAgent)`,
+      provider: `Multi-Agente Híbrido (${(vlmAnalysis && vlmAnalysis.executedModel) || this.vlmAgent.name} + VisualAnalysisAgent)`,
+      executedModel: vlmAnalysis ? vlmAnalysis.executedModel : null,
+      preferredModel: vlmAnalysis ? vlmAnalysis.preferredModel : null,
+      isFallback: vlmAnalysis ? Boolean(vlmAnalysis.isFallback) : false,
+      fallbackReason: vlmAnalysis ? vlmAnalysis.fallbackReason : null,
       processedInMemoryOnly: true
     };
   }

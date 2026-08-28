@@ -47,6 +47,9 @@ class MockPerceptionProvider extends BasePerceptionProvider {
     }
 
     if (hasHuman) {
+      const speech = userQuestion && !userQuestion.toLowerCase().includes('o que tem na minha frente')
+        ? `Sobre "${userQuestion}": Há uma pessoa à sua frente${clothingColor ? ' vestindo roupa de tom ' + clothingColor : ''}, a cerca de 90 cm.`
+        : `À sua frente há uma pessoa a cerca de 90 centímetros de distância.`;
       return {
         priority: 'NORMAL',
         humanDetected: true,
@@ -55,11 +58,15 @@ class MockPerceptionProvider extends BasePerceptionProvider {
         detectedObjects: detectedObjects,
         hazards: [],
         description: `À sua frente há uma pessoa identificada pela câmera${clothingColor ? ' vestindo roupa de tom ' + clothingColor : ''}${hasHeadphones ? ' com fone de ouvido' : ''}, a cerca de 90 cm de distância.`,
-        speechText: `À sua frente há uma pessoa a cerca de 90 centímetros de distância.`,
+        speechText: speech,
         provider: this.name,
         processedInMemoryOnly: true
       };
     }
+
+    const speech = userQuestion
+      ? `Sobre "${userQuestion}": O ambiente à frente está desobstruído e sem perigos imediatos.`
+      : `À sua frente o caminho está livre de obstáculos.`;
 
     return {
       priority: 'NORMAL',
@@ -69,7 +76,7 @@ class MockPerceptionProvider extends BasePerceptionProvider {
       detectedObjects: ['Ambiente interno', 'Chão nivelado', 'Iluminação adequada'],
       hazards: [],
       description: `O ambiente à frente está livre de obstáculos imediatos. Nenhuma pessoa ou perigo detectado na área central.`,
-      speechText: `À sua frente o caminho está livre de obstáculos.`,
+      speechText: speech,
       provider: this.name,
       processedInMemoryOnly: true
     };

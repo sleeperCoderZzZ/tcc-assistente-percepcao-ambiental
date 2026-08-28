@@ -197,9 +197,26 @@
                     clearable
                     hide-details
                     append-inner-icon="mdi-send-circle"
+                    class="mb-3"
                     @click:append-inner="captureAndAnalyze()"
                     @keyup.enter="captureAndAnalyze()"
                   ></v-text-field>
+
+                  <!-- Seleção de Provedor / Modelo de IA para Análise Comparativa -->
+                  <v-select
+                    v-model="selectedProvider"
+                    :items="providerOptions"
+                    item-title="title"
+                    item-value="value"
+                    label="Modelo de IA para Inferência"
+                    variant="outlined"
+                    density="compact"
+                    color="primary"
+                    hide-details
+                    prepend-inner-icon="mdi-robot"
+                    class="bg-white rounded-lg"
+                    aria-label="Selecionar Modelo de IA para Percepção Ambiental"
+                  ></v-select>
                 </div>
               </v-card>
             </v-col>
@@ -264,6 +281,30 @@
                           Sem Pessoas na Cena
                         </v-chip>
                       </div>
+
+                      <!-- DESTAQUE DO MODELO DE IA RESPONSÁVEL (COM DIAGNÓSTICO DE FALLBACK) -->
+                      <v-alert
+                        :type="latestAnalysis.isFallback ? 'warning' : 'info'"
+                        variant="tonal"
+                        density="compact"
+                        :icon="latestAnalysis.isFallback ? 'mdi-alert-circle-outline' : 'mdi-brain'"
+                        class="mb-4 rounded-lg font-weight-bold text-caption"
+                      >
+                        <div>
+                          <strong>Modelo Executado:</strong>
+                          <span class="ml-1 text-primary font-weight-black">{{ latestAnalysis.executedModel || latestAnalysis.provider }}</span>
+                          <v-chip v-if="!latestAnalysis.isFallback" color="success" size="x-small" variant="flat" class="ml-2 font-weight-bold">
+                            Modelo Principal Direto
+                          </v-chip>
+                          <v-chip v-else color="warning" size="x-small" variant="flat" class="ml-2 font-weight-bold">
+                            Fallback Ativado
+                          </v-chip>
+                        </div>
+
+                        <div v-if="latestAnalysis.isFallback" class="mt-1 text-amber-900 font-weight-medium">
+                          ℹ️ {{ latestAnalysis.fallbackReason || 'O modelo principal estava indisponível/em alta demanda. Alternado para o modelo secundário.' }}
+                        </div>
+                      </v-alert>
 
                       <!-- Lista de Objetos Visíveis Identificados -->
                       <div v-if="latestAnalysis.detectedObjects && latestAnalysis.detectedObjects.length > 0">

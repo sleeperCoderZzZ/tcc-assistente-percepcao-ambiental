@@ -43,24 +43,23 @@ Retorne APENAS JSON:
       }
     };
 
-    // Lista de modelos candidatos (v3+, v2.5, Pro e Flash) em ordem de preferência
+    // Lista de modelos candidatos ativos do Gemini
     const candidateModels = Array.from(new Set([
       this.preferredModel,
-      'gemini-3.5-pro',
       'gemini-3.5-flash',
-      'gemini-3.0-pro',
-      'gemini-3.0-flash',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-      'gemini-2.0-pro-exp',
-      'gemini-2.0-flash',
-      'gemini-1.5-pro',
-      'gemini-1.5-flash'
+      'gemini-flash-latest',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-pro-latest'
     ].filter(Boolean)));
 
     let lastError = null;
+    const preferredModel = candidateModels[0];
 
     for (const model of candidateModels) {
+      const isFallback = model !== preferredModel;
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
       
       try {
@@ -72,13 +71,9 @@ Retorne APENAS JSON:
 
         if (!response.ok) {
           const errText = await response.text();
-          // Se for 503 (High Demand), 429 (Rate Limit), 404 (Not Found) ou 500 (Internal Error), tenta o próximo modelo
-          if ([503, 429, 404, 500].includes(response.status)) {
-            console.warn(`[GeminiPerceptionProvider] Modelo ${model} indisponível (HTTP ${response.status}). Alternando para o próximo modelo candidato...`);
-            lastError = new Error(`Erro no provedor Gemini modelo ${model} (${response.status}): ${errText}`);
-            continue;
-          }
-          throw new Error(`Erro no provedor Gemini (${response.status}): ${errText}`);
+          console.warn(`[GeminiPerceptionProvider] Modelo ${model} indisponível ou recusou a requisição (HTTP ${response.status}). Alternando para o próximo modelo candidato...`);
+          lastError = new Error(`HTTP ${response.status} no modelo ${model}: ${errText.substring(0, 100)}`);
+          continue;
         }
 
         const data = await response.json();
@@ -96,6 +91,10 @@ Retorne APENAS JSON:
             description: parsed.description || 'Análise da imagem concluída.',
             speechText: parsed.speechText || parsed.description || 'Análise concluída.',
             provider: `${this.name} (${model})`,
+            executedModel: model,
+            preferredModel: preferredModel,
+            isFallback: isFallback,
+            fallbackReason: isFallback ? `Fallback para ${model} (Modelo principal ${preferredModel} indisponível)` : null,
             processedInMemoryOnly: true
           };
         } catch (e) {
@@ -109,15 +108,16 @@ Retorne APENAS JSON:
             description: rawContent || 'Descrição gerada pelo modelo.',
             speechText: rawContent || 'Análise concluída.',
             provider: `${this.name} (${model})`,
+            executedModel: model,
+            preferredModel: preferredModel,
+            isFallback: isFallback,
+            fallbackReason: isFallback ? `Fallback para ${model} (Modelo principal ${preferredModel} indisponível)` : null,
             processedInMemoryOnly: true
           };
         }
       } catch (err) {
-        if (err.message && (err.message.includes('503') || err.message.includes('429') || err.message.includes('404') || err.message.includes('500'))) {
-          lastError = err;
-          continue;
-        }
-        throw err;
+        lastError = err;
+        continue;
       }
     }
 

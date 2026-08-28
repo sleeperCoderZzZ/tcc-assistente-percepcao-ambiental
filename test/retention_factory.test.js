@@ -64,7 +64,7 @@ test('EphemeralMediaProcessor - deve responder à pergunta "O que tem na minha f
   });
 
   assert.strictEqual(result.priority, 'NORMAL');
-  assert.ok(result.speechText.includes('À sua frente'));
+  assert.ok(result.speechText.toLowerCase().includes('à sua frente'));
   assert.strictEqual(result.retentionPolicy.zeroDataRetention, true);
   assert.strictEqual(mockImageFile.buffer, null);
 });
@@ -96,4 +96,26 @@ test('EphemeralMediaProcessor - GARANTIA ARQUITETURAL: deve limpar buffers da RA
   assert.strictEqual(mockImageFile.buffer, null);
   assert.strictEqual(mockAudioFile.buffer, null);
 });
+
+test('EphemeralMediaProcessor - deve conter a estrutura de propriedades esperada pelo cliente PWA', async () => {
+  const mockImageFile = {
+    buffer: Buffer.from('imagem_teste_payload'),
+    mimetype: 'image/jpeg'
+  };
+
+  const result = await EphemeralMediaProcessor.processPerception({
+    imageFile: mockImageFile,
+    userQuestion: 'Qual a cor da minha roupa?',
+    providerOverride: 'mock'
+  });
+
+  assert.ok(typeof result.speechText === 'string');
+  assert.ok(typeof result.description === 'string');
+  assert.ok(Array.isArray(result.detectedObjects));
+  assert.ok(typeof result.proximityEstimate === 'string');
+  assert.ok(typeof result.humanDetected === 'boolean');
+  assert.strictEqual(result.retentionPolicy.zeroDataRetention, true);
+  assert.strictEqual(result.retentionPolicy.storageType, 'RAM_VOLATILE_ONLY');
+});
+
 

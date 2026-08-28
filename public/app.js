@@ -39,6 +39,14 @@ const app = createApp({
     const latestAnalysis = ref(null);
     const lastSpeechText = ref('');
     const showHelpDialog = ref(false);
+    const selectedProvider = ref('gemini');
+
+    const providerOptions = [
+      { title: 'Google Gemini VLM (Recomendado)', value: 'gemini' },
+      { title: 'Pipeline Multi-Agente Híbrido', value: 'hybrid' },
+      { title: 'OpenAI GPT-4o Mini', value: 'openai' },
+      { title: 'Mock Teste (Offline)', value: 'mock' }
+    ];
 
     // Referências DOM para elementos de vídeo e canvas
     const videoRef = ref(null);
@@ -112,6 +120,9 @@ const app = createApp({
         if (userQuestion.value.trim()) {
           formData.append('question', userQuestion.value.trim());
         }
+        if (selectedProvider.value) {
+          formData.append('provider', selectedProvider.value);
+        }
 
         const response = await fetch('/api/perceive', {
           method: 'POST',
@@ -123,14 +134,17 @@ const app = createApp({
         }
 
         const data = await response.json();
-        latestAnalysis.value = data;
-        lastSpeechText.value = data.speechText;
+        const perceptionData = data.data || data;
+
+        latestAnalysis.value = perceptionData;
+        const textToRead = perceptionData.speechText || perceptionData.description || 'Análise concluída.';
+        lastSpeechText.value = textToRead;
 
         // Anúncio e Leitura Falada Automática (TTS)
-        announceAria(data.speechText, 'assertive');
-        speakText(data.speechText, () => {
+        announceAria(textToRead, 'assertive');
+        speakText(textToRead, () => {
           // Se houver perigo detectado, emitir tom de alerta sonoro
-          if (data.hazards && data.hazards.length > 0) {
+          if (perceptionData.hazards && perceptionData.hazards.length > 0) {
             playAudioBeep(300, 0.3, 'sawtooth');
           }
         });
@@ -330,6 +344,8 @@ const app = createApp({
       latestAnalysis,
       lastSpeechText,
       showHelpDialog,
+      selectedProvider,
+      providerOptions,
       videoRef,
       canvasRef,
       captureAndAnalyze,
