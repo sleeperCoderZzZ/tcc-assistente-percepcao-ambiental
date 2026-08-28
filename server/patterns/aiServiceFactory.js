@@ -21,7 +21,7 @@ class AIServiceFactory {
 
     switch (selected) {
       case 'gemini':
-        return new GeminiPerceptionProvider(process.env.GEMINI_API_KEY);
+        return new GeminiPerceptionProvider(process.env.GEMINI_API_KEY, process.env.GEMINI_MODEL);
 
       case 'openai':
       case 'gpt':

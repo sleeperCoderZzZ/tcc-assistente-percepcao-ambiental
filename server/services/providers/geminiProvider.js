@@ -6,9 +6,10 @@ const BasePerceptionProvider = require('./baseProvider');
  * apenas para riscos físicos corporais iminentes.
  */
 class GeminiPerceptionProvider extends BasePerceptionProvider {
-  constructor(apiKey) {
+  constructor(apiKey, modelName) {
     super('GeminiPerceptionProvider');
     this.apiKey = apiKey || process.env.GEMINI_API_KEY;
+    this.preferredModel = modelName || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
   }
 
   async analyzePerception({ imageBuffer, imageMimeType, userQuestion }) {
@@ -41,7 +42,14 @@ RETORNE ESTRITAMENTE O SEGUINTE JSON:
   "speechText": "resposta clara e natural para leitura em voz alta ao usuário"
 }`;
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
+    // Lista de modelos candidatos em ordem de preferência
+    const candidateModels = Array.from(new Set([
+      this.preferredModel,
+      'gemini-2.0-flash',
+      'gemini-2.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash'
+    ].filter(Boolean)));
 
     const payload = {
       contents: [{
@@ -61,48 +69,69 @@ RETORNE ESTRITAMENTE O SEGUINTE JSON:
       }
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let lastError = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Erro no provedor Gemini (${response.status}): ${errText}`);
+    for (const model of candidateModels) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+      
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          // Se for 404, tenta o próximo modelo da lista de candidatos
+          if (response.status === 404) {
+            lastError = new Error(`Modelo ${model} não encontrado (404).`);
+            continue;
+          }
+          throw new Error(`Erro no provedor Gemini (${response.status}): ${errText}`);
+        }
+
+        const data = await response.json();
+        const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        try {
+          const parsed = JSON.parse(rawContent);
+          return {
+            priority: parsed.priority || 'NORMAL',
+            humanDetected: parsed.humanDetected || false,
+            humanDetails: parsed.humanDetails || null,
+            proximityEstimate: parsed.proximityEstimate || 'Distância não especificada',
+            detectedObjects: Array.isArray(parsed.detectedObjects) ? parsed.detectedObjects : [],
+            hazards: Array.isArray(parsed.hazards) ? parsed.hazards : [],
+            description: parsed.description || 'Análise da imagem concluída.',
+            speechText: parsed.speechText || parsed.description || 'Análise concluída.',
+            provider: `${this.name} (${model})`,
+            processedInMemoryOnly: true
+          };
+        } catch (e) {
+          return {
+            priority: 'NORMAL',
+            humanDetected: false,
+            humanDetails: null,
+            proximityEstimate: 'Não determinado',
+            detectedObjects: [],
+            hazards: [],
+            description: rawContent || 'Descrição gerada pelo modelo.',
+            speechText: rawContent || 'Análise concluída.',
+            provider: `${this.name} (${model})`,
+            processedInMemoryOnly: true
+          };
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('404')) {
+          lastError = err;
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const data = await response.json();
-    const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    try {
-      const parsed = JSON.parse(rawContent);
-      return {
-        priority: parsed.priority || 'NORMAL',
-        humanDetected: parsed.humanDetected || false,
-        humanDetails: parsed.humanDetails || null,
-        proximityEstimate: parsed.proximityEstimate || 'Distância não especificada',
-        detectedObjects: Array.isArray(parsed.detectedObjects) ? parsed.detectedObjects : [],
-        hazards: Array.isArray(parsed.hazards) ? parsed.hazards : [],
-        description: parsed.description || 'Análise da imagem concluída.',
-        speechText: parsed.speechText || parsed.description || 'Análise concluída.',
-        provider: this.name,
-        processedInMemoryOnly: true
-      };
-    } catch (e) {
-      return {
-        priority: 'NORMAL',
-        humanDetected: false,
-        humanDetails: null,
-        proximityEstimate: 'Não determinado',
-        detectedObjects: [],
-        hazards: [],
-        description: rawContent || 'Descrição gerada pelo modelo.',
-        speechText: rawContent || 'Análise concluída.',
-        provider: this.name,
-        processedInMemoryOnly: true
-      };
-    }
+    throw lastError || new Error("Nenhum modelo compatível do Gemini pôde ser encontrado na API.");
   }
 }
 
